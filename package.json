@@ -1,0 +1,37 @@
+{
+  "name": "sunu-market-web",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "react-router dev",
+    "build": "react-router build",
+    "start": "react-router-serve ./build/server/index.js",
+    "typecheck": "react-router typegen && tsc",
+    "preview": "react-router build && react-router-serve ./build/server/index.js"
+  },
+  "devDependencies": {
+    "@react-router/dev": "^7.18.5",
+    "@tailwindcss/vite": "^4.3.5",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.8",
+    "vite-tsconfig-paths": "^6.1.1"
+  },
+  "dependencies": {
+    "@react-router/node": "^7.18.5",
+    "@react-router/serve": "^7.18.5",
+    "isbot": "^5.2.3",
+    "lucide-react": "^1.75.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router": "^7.18.5"
+  },
+  "description": "Site et application web de Sunu-Market (React Router SSR, Vite, Tailwind)",
+  "engines": {
+    "node": ">=22"
+  }
+}

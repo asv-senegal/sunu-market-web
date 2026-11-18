@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+/* Charte Sunu-Market */
+@theme {
+  --color-indigo: #1B2A6B;
+  --color-indigo-50: #EEF0F8;
+  --color-indigo-100: #DCE0F0;
+  --color-orange: #C94310;
+  --color-orange-dark: #A9370B;
+  --color-orange-50: #FBEBE3;
+  --color-turquoise: #0B7F7C;
+  --color-turquoise-50: #DDF1EF;
+  --color-sable: #FFF7EC;
+  --color-sable-dark: #F3E6D2;
+  --color-ink: #1A1F36;
+  --color-muted: #5E6482;
+  --font-display: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+/* Défilement sans à-coups dans les zones défilantes, pas de saut de mise en page quand la barre de défilement apparaît */
+html { scrollbar-gutter: stable; }
+.overflow-y-auto, .overflow-x-auto { -webkit-overflow-scrolling: touch; }
+button, a, input, [role="option"] { touch-action: manipulation; }
+body { @apply bg-sable text-ink font-sans antialiased; }
+h1, h2, h3, .font-display { font-family: var(--font-display); }
+:focus-visible { outline: 3px solid var(--color-turquoise); outline-offset: 2px; }
+
+@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 h-11 text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed; }
+@utility btn-primary { @apply btn bg-orange text-white hover:bg-orange-dark; }
+@utility btn-indigo { @apply btn bg-indigo text-white hover:bg-indigo/90; }
+@utility btn-ghost { @apply btn border border-sable-dark bg-white text-indigo hover:bg-indigo-50; }
+@utility btn-sm { @apply h-9 px-3 text-xs rounded-lg; }
+@utility card { @apply rounded-2xl bg-white border border-sable-dark; }
+@utility input { @apply w-full h-11 rounded-xl border border-sable-dark bg-white px-3 text-sm placeholder:text-muted/70 focus:border-turquoise focus:outline-none; }
+@utility label { @apply block text-sm font-medium text-ink mb-1; }
+@utility chip { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+@utility container-x { @apply mx-auto w-full max-w-7xl px-4 md:px-6; }
+
+@keyframes ticker { 0%, 18% { transform: translateY(0); } 25%, 43% { transform: translateY(-3rem); } 50%, 68% { transform: translateY(-6rem); } 75%, 93% { transform: translateY(-9rem); } 100% { transform: translateY(-12rem); } }
+
+/* ================= Animations Sunu-Market =================
+   Légères (CSS + IntersectionObserver), désactivées si l'utilisateur préfère réduire les animations. */
+@keyframes fade-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pop-in { 0% { opacity: 0; transform: scale(.92) translateY(6px); } 100% { opacity: 1; transform: none; } }
+@keyframes slide-down { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@keyframes slide-up-sheet { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes kenburns { from { transform: scale(1.02); } to { transform: scale(1.12) translate(-1.5%, -1%); } }
+@keyframes progress { 0% { transform: scaleX(0); } 60% { transform: scaleX(.7); } 100% { transform: scaleX(.92); } }
+@keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+@keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgb(11 127 124 / .45); } 100% { box-shadow: 0 0 0 10px rgb(11 127 124 / 0); } }
+@keyframes dropdown { from { opacity: 0; transform: translateY(-4px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+/* Les colonnes de grille ne débordent jamais à cause d'un texte long */
+.grid > * { min-width: 0; }
+/* Sous-catégories du menu déroulant : apparition en cascade au survol */
+.group:hover .mm-item, .group:focus-within .mm-item { animation: fade-up .35s cubic-bezier(.2,.7,.2,1) both; }
+
+/* Apparition au défilement : visible par défaut sans JavaScript */
+.js [data-reveal] { opacity: 0; transform: translateY(16px); transition: opacity .45s cubic-bezier(.2,.7,.2,1), transform .45s cubic-bezier(.2,.7,.2,1); transition-delay: var(--d, 0ms); will-change: opacity, transform; }
+.js [data-reveal].is-visible { will-change: auto; }
+.js [data-reveal="left"] { transform: translateX(-18px); }
+.js [data-reveal="right"] { transform: translateX(18px); }
+.js [data-reveal="zoom"] { transform: scale(.97); }
+.js [data-reveal].is-visible { opacity: 1; transform: none; }
+
+.animate-fade-up { animation: fade-up .5s cubic-bezier(.2,.7,.2,1) both; }
+.animate-pop { animation: pop-in .28s cubic-bezier(.2,.8,.3,1.2) both; }
+.animate-slide-down { animation: slide-down .22s ease-out both; }
+.sheet-in { animation: slide-up-sheet .3s cubic-bezier(.2,.8,.2,1) both; }
+.kenburns { animation: kenburns 9s ease-out both; }
+.live-dot { animation: pulse-ring 1.6s infinite; }
+.floaty { animation: float 4s ease-in-out infinite; }
+.skeleton { background: linear-gradient(90deg, var(--color-sable-dark) 25%, #fff 50%, var(--color-sable-dark) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+.nav-progress { transform-origin: left; animation: progress 2.5s ease-out forwards; }
+.lift { transition: transform .25s ease, box-shadow .25s ease; }
+.lift:hover { transform: translateY(-4px); box-shadow: 0 14px 30px -12px rgb(27 42 107 / .25); }
+.press:active { transform: scale(.97); }
+.no-scrollbar { scrollbar-width: none; } .no-scrollbar::-webkit-scrollbar { display: none; }
+.edge-fade { mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); }
+
+/* Transitions entre pages (navigateurs compatibles) */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: .12s ease-out both fade-out-soft; }
+::view-transition-new(root) { animation: .2s cubic-bezier(.2,.7,.2,1) both fade-in; }
+@keyframes fade-out-soft { to { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  .js [data-reveal] { opacity: 1; transform: none; }
+}
