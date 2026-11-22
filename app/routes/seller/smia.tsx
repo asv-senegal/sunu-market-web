@@ -2,17 +2,17 @@
 import { Form, Link, redirect, useActionData, useLoaderData, useNavigation, useFetcher } from 'react-router';
 import { useEffect, useRef } from 'react';
 import { Sparkles, Coins, Check, X, Power, Send, FileText, Bot, AlertTriangle, Download } from 'lucide-react';
-import { api, apiOrThrow, formError } from '~/lib/api.server';
+import { api, apiOrThrow, formError, idemOf, newIdem } from '~/lib/api.server';
 import { ago } from '~/lib/format';
 import { Alert, PageTitle } from '~/components/ui';
 import { CountUp, Ring } from '~/components/motion';
 
 export const meta = () => [{ title: 'Assistant SM-IA | Sunu-Market' }];
-export const loader = ({ request }: any) => apiOrThrow(request, '/me/smia');
+export const loader = async ({ request }: any) => ({ ...(await apiOrThrow(request, '/me/smia')), idem: newIdem() });
 export async function action({ request }: any) {
   const f = await request.formData();
   const intent = f.get('intent');
-  if (intent === 'ask') { const r = await api(request, '/me/smia/assistant', { json: { text: f.get('text') } }); return r.ok ? { asked: true } : formError(r); }
+  if (intent === 'ask') { const r = await api(request, '/me/smia/assistant', { json: { text: f.get('text') }, idem: idemOf(f) }); return r.ok ? { asked: true } : formError(r); }
   if (intent === 'approve' || intent === 'reject') {
     const r = await api(request, `/me/smia/actions/${f.get('id')}/${intent}`, { method: 'POST' });
     if (!r.ok) return formError(r);
@@ -88,7 +88,7 @@ export default function Smia() {
             </div>
             {askErr && <p className="text-xs text-red-700 mt-2">{askErr}</p>}
             <ask.Form ref={askForm} method="post" className="flex gap-2 mt-3">
-              <input type="hidden" name="intent" value="ask" />
+              <input type="hidden" name="intent" value="ask" /><input type="hidden" name="idem" value={d.idem} />
               <input name="text" required minLength={2} maxLength={1000} placeholder="Votre question…" className="input rounded-full" disabled={off} aria-label="Question à SM-IA" />
               <button className="btn-primary rounded-full w-11 px-0 press" disabled={off || ask.state !== 'idle'} aria-label="Envoyer"><Send className="size-4" /></button>
             </ask.Form>

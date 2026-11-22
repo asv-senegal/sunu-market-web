@@ -4,17 +4,34 @@ import { getToken } from './session.server';
 
 export type ApiResult<T = any> = { ok: boolean; status: number; data: T };
 
+// Clé d'idempotence d'un formulaire : créée par le loader, renvoyée dans un champ caché « idem ».
+// Un double clic ou un formulaire renvoyé réutilise la même clé : l'API ne crée rien deux fois.
+export const newIdem = () => crypto.randomUUID();
+export const idemOf = (f: FormData) => {
+  const v = f.get('idem');
+  return typeof v === 'string' && /^[A-Za-z0-9_-]{8,100}$/.test(v) ? v : undefined;
+};
+
 // Appel à l'API Express depuis le serveur web (loaders et actions)
-export async function api<T = any>(request: Request, path: string, init: { method?: string; json?: unknown; form?: FormData } = {}): Promise<ApiResult<T>> {
+export async function api<T = any>(request: Request, path: string, init: { method?: string; json?: unknown; form?: FormData; idem?: string } = {}): Promise<ApiResult<T>> {
   const token = await getToken(request);
   const headers: Record<string, string> = {};
   if (token) headers.Authorization = `Bearer ${token}`;
+  if (init.idem) headers['Idempotency-Key'] = init.idem;
   let body: BodyInit | undefined;
   if (init.json !== undefined) { headers['Content-Type'] = 'application/json'; body = JSON.stringify(init.json); }
   if (init.form) body = init.form;
-  const res = await fetch(`${API_URL}/api${path}`, { method: init.method || (body ? 'POST' : 'GET'), headers, body });
-  const d = await res.json().catch(() => ({}));
-  return { ok: res.ok, status: res.status, data: d };
+  const method = init.method || (body ? 'POST' : 'GET');
+  // Même demande déjà en cours (double clic) : on attend sa réponse au lieu d'afficher une erreur
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(`${API_URL}/api${path}`, { method, headers, body });
+    const d = await res.json().catch(() => ({}));
+    if (res.status === 409 && d?.code === 'request_in_progress' && init.idem && attempt < 30) {
+      await new Promise((r) => setTimeout(r, 500));
+      continue;
+    }
+    return { ok: res.ok, status: res.status, data: d };
+  }
 }
 
 // Lecture obligatoire : redirige vers la connexion ou la vérification si nécessaire

@@ -53,7 +53,7 @@ export default function Dashboard() {
           <ul className="divide-y divide-sable-dark">
             {d.top.map((l: any) => (
               <li key={l.id} className="flex items-center gap-3 py-2.5">
-                <img src={img(l.photo)} alt="" className="size-11 rounded-lg object-cover" />
+                <img src={img(l.photo)} alt="" className="size-11 rounded-lg object-cover" loading="lazy" decoding="async" />
                 <Link prefetch="intent" to={`/a/${l.id}`} className="flex-1 text-sm font-medium truncate hover:underline">{l.title}</Link>
                 <span className="text-xs text-muted">{l.views} vues · {l.sold} vendus</span>
                 <span className="text-sm font-semibold w-28 text-right">{fcfa(l.price_fcfa)}</span>

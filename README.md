@@ -49,6 +49,10 @@ public/demo/            photos de démonstration (Pexels, voir CREDITS-pexels.tx
   ```
 - **`motion`** : apparitions au défilement, carrousels, compteurs, anneaux de progression.
 
+## Mise en ligne
+
+Déploiement automatique sur PlanetHoster N0C par GitHub Actions (build, FTP, SSH) : voir **[DEPLOYMENT.md](DEPLOYMENT.md)** et `.github/workflows/deploy.yml`. Démarrage par Passenger : `server.cjs`.
+
 ## Fluidité
 
 - Préchargement des pages au survol ou au toucher des liens (`prefetch="intent"`).

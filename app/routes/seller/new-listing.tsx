@@ -2,7 +2,7 @@
 import { Form, useActionData, useNavigation, useRouteLoaderData, redirect, useLoaderData, Link, useFetcher } from 'react-router';
 import { useState, useRef, useEffect } from 'react';
 import { ImagePlus, X, Sparkles } from 'lucide-react';
-import { api, formError } from '~/lib/api.server';
+import { api, formError, idemOf, newIdem } from '~/lib/api.server';
 import { CONDITION, PAY, DELIVERY } from '~/lib/format';
 import { Alert, Field, PageTitle } from '~/components/ui';
 import type { Cat } from '~/components/Shell';
@@ -12,13 +12,13 @@ export const meta = () => [{ title: 'Poser Une Annonce | Sunu-Market' }];
 export async function loader({ request }: any) {
   const r = await api(request, '/me/shop');
   if (!r.ok) return redirect('/ma-boutique');
-  return { active: !!r.data.subscription };
+  return { active: !!r.data.subscription, idem: newIdem() };
 }
 export async function action({ request }: any) {
   const form = await request.formData();
   // Rédaction par SM-IA (crédits débités au token)
   if (form.get('intent') === 'describe') {
-    const r = await api(request, '/me/smia/describe', { json: { title: form.get('title') || undefined, subcategoryId: form.get('subcategoryId') ? Number(form.get('subcategoryId')) : undefined, condition: form.get('condition') || undefined, notes: form.get('description') || undefined } });
+    const r = await api(request, '/me/smia/describe', { json: { title: form.get('title') || undefined, subcategoryId: form.get('subcategoryId') ? Number(form.get('subcategoryId')) : undefined, condition: form.get('condition') || undefined, notes: form.get('description') || undefined }, idem: idemOf(form) });
     return r.ok ? { ai: r.data } : { aiError: r.data.error };
   }
   // Retire les champs de fichiers vides envoyés par le navigateur
@@ -29,7 +29,7 @@ export async function action({ request }: any) {
 }
 
 export default function NewListing() {
-  const { active } = useLoaderData<typeof loader>();
+  const { active, idem } = useLoaderData<typeof loader>();
   const { cats } = useRouteLoaderData('root') as { cats: Cat[] };
   const a = useActionData<typeof action>() as any;
   const e = a?.fields || {};
@@ -58,6 +58,7 @@ export default function NewListing() {
     <>
       <PageTitle title="Poser Une Annonce" sub="Des photos nettes et un prix clair font vendre plus vite." />
       <Form ref={formRef} method="post" encType="multipart/form-data" className="card p-6 space-y-5 max-w-3xl animate-fade-up">
+        <input type="hidden" name="idem" value={idem} />
         {a?.error && <Alert>{a.error}</Alert>}
         <div>
           <span className="label">Photos (1 à 6)</span>
@@ -67,7 +68,7 @@ export default function NewListing() {
             <input type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple required className="sr-only"
               onChange={(ev) => setPreviews(Array.from(ev.target.files || []).slice(0, 6).map((f) => URL.createObjectURL(f)))} />
           </label>
-          {previews.length > 0 && <div className="flex gap-2 mt-2">{previews.map((p) => <img key={p} src={p} alt="" className="size-16 rounded-lg object-cover" />)}</div>}
+          {previews.length > 0 && <div className="flex gap-2 mt-2">{previews.map((p) => <img key={p} src={p} alt="" className="size-16 rounded-lg object-cover" loading="lazy" decoding="async" />)}</div>}
         </div>
         <Field label="Titre" name="title" required minLength={5} maxLength={90} placeholder="Ex. Boubou en bazin brodé, taille M" error={e.title} />
         <div className="grid sm:grid-cols-2 gap-3">

@@ -2,11 +2,11 @@
 import { Link, useFetcher, useLoaderData, useRevalidator, data } from 'react-router';
 import { useEffect, useRef } from 'react';
 import { ArrowLeft, Send, ShoppingBag, Info, Sparkles, ImagePlus } from 'lucide-react';
-import { api, apiOrThrow, formError } from '~/lib/api.server';
+import { api, apiOrThrow, formError, idemOf, newIdem } from '~/lib/api.server';
 import { fcfa, img, timeFr, dateFr, ORDER_STATUS, PAY } from '~/lib/format';
 
 export async function loader({ request, params }: any) {
-  return apiOrThrow(request, `/conversations/${params.id}`);
+  return { ...(await apiOrThrow(request, `/conversations/${params.id}`)), idem: newIdem() };
 }
 export async function action({ request, params }: any) {
   const f = await request.formData();
@@ -15,12 +15,12 @@ export async function action({ request, params }: any) {
     const r = await api(request, `/conversations/${params.id}/images`, { form: fd });
     return r.ok ? { ok: true } : formError(r);
   }
-  const r = await api(request, `/conversations/${params.id}/messages`, { json: { body: f.get('body') } });
+  const r = await api(request, `/conversations/${params.id}/messages`, { json: { body: f.get('body') }, idem: idemOf(f) });
   return r.ok ? { ok: true } : formError(r);
 }
 
 export default function Thread() {
-  const { conversation: c, messages, orders } = useLoaderData<typeof loader>();
+  const { conversation: c, messages, orders, idem } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
   const imgFetcher = useFetcher();
   const rv = useRevalidator();
@@ -40,7 +40,7 @@ export default function Thread() {
     <>
       <header className="flex items-center gap-3 p-3 border-b border-sable-dark">
         <Link prefetch="intent" to="/messages" className="md:hidden p-1" aria-label="Retour"><ArrowLeft className="size-5" /></Link>
-        <img src={img(c.photo)} alt="" className="size-10 rounded-lg object-cover" />
+        <img src={img(c.photo)} alt="" className="size-10 rounded-lg object-cover" loading="lazy" decoding="async" />
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-sm truncate flex items-center gap-2">{c.iAmSeller ? c.buyer_name : c.shop_name}
             {c.smiaActive && <span className="chip bg-turquoise-50 text-turquoise text-[10px]"><Sparkles className="size-3" />SM-IA Actif</span>}</p>
@@ -74,7 +74,7 @@ export default function Thread() {
                   <div className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${m.kind === 'order' ? 'bg-orange-50 border border-orange/30 text-ink' : ai ? 'bg-turquoise-50 border border-turquoise/30 text-ink' : mine ? 'bg-indigo text-white' : 'bg-white border border-sable-dark'}`}>
                     {m.kind === 'order' && <p className="text-[11px] font-semibold text-orange-dark mb-0.5 flex items-center gap-1"><ShoppingBag className="size-3" />Commande</p>}
                     {ai && <p className="text-[11px] font-semibold text-turquoise mb-0.5 flex items-center gap-1"><Sparkles className="size-3" />SM-IA, réponse automatique pour {c.shop_name}</p>}
-                    {m.kind === 'image' && m.image_url ? <a href={m.image_url} target="_blank" rel="noreferrer"><img src={m.image_url} alt="Photo envoyée" className="rounded-xl max-h-60 object-cover" loading="lazy" /></a> : <p className="whitespace-pre-line">{m.body}</p>}
+                    {m.kind === 'image' && m.image_url ? <a href={m.image_url} target="_blank" rel="noreferrer"><img src={m.image_url} alt="Photo envoyée" className="rounded-xl max-h-60 object-cover" loading="lazy" decoding="async" /></a> : <p className="whitespace-pre-line">{m.body}</p>}
                     <p className={`text-[10px] mt-1 text-right ${mine && m.kind === 'text' || mine && m.kind === 'image' ? 'text-white/60' : 'text-muted'}`}>{timeFr(m.created_at)}</p>
                   </div>
                 </div>
@@ -85,6 +85,7 @@ export default function Thread() {
         <div ref={end} />
       </div>
       <fetcher.Form ref={form} method="post" className="p-3 border-t border-sable-dark flex gap-2 items-center">
+        <input type="hidden" name="idem" value={idem} />
         <label className={`size-10 shrink-0 rounded-full flex items-center justify-center cursor-pointer hover:bg-sable text-indigo ${imgFetcher.state !== 'idle' ? 'animate-pulse' : ''}`} aria-label="Envoyer une photo">
           <ImagePlus className="size-5" />
           <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => {

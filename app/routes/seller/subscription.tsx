@@ -2,16 +2,16 @@
 import { Form, redirect, useActionData, useLoaderData, useNavigation, Link } from 'react-router';
 import { useState } from 'react';
 import { CheckCircle2, Info, Gift, BadgeCheck } from 'lucide-react';
-import { api, apiOrThrow, formError } from '~/lib/api.server';
+import { api, apiOrThrow, formError, idemOf, newIdem } from '~/lib/api.server';
 import { fcfa, dateFr, PAY } from '~/lib/format';
 import { Alert, Field, PageTitle } from '~/components/ui';
 import { Ring } from '~/components/motion';
 
 export const meta = () => [{ title: 'Abonnement | Sunu-Market' }];
-export const loader = ({ request }: any) => apiOrThrow(request, '/me/subscription');
+export const loader = async ({ request }: any) => ({ ...(await apiOrThrow(request, '/me/subscription')), idem: newIdem() });
 export async function action({ request }: any) {
   const f = await request.formData();
-  const r = await api(request, '/me/subscription', { json: { payMethod: f.get('payMethod'), payRef: f.get('payRef') || undefined } });
+  const r = await api(request, '/me/subscription', { json: { payMethod: f.get('payMethod'), payRef: f.get('payRef') || undefined }, idem: idemOf(f) });
   if (!r.ok) return formError(r);
   // API du prestataire configurée : redirection vers la page de paiement Wave ou Orange Money
   if (r.data.payment.checkout_url) return redirect(r.data.payment.checkout_url);
@@ -56,6 +56,7 @@ export default function Subscription() {
           {a?.error && <div className="mt-3"><Alert>{a.error}</Alert></div>}
           {pending ? <div className="mt-4"><Alert tone="info">Un paiement est en cours de vérification par l’équipe.</Alert></div> : (
             <Form method="post" className="mt-4 space-y-4">
+              <input type="hidden" name="idem" value={d.idem} />
               <div className="grid grid-cols-2 gap-2">
                 {(['wave', 'orange_money'] as const).map((p) => (
                   <label key={p} className="rounded-2xl border-2 border-sable-dark p-3 cursor-pointer has-[:checked]:border-turquoise has-[:checked]:bg-turquoise-50 transition">

@@ -39,7 +39,7 @@ export default function OrderPage() {
       <div className="grid lg:grid-cols-[1fr_340px] gap-6">
         <div className="space-y-5">
           <div className="card p-4 flex gap-4 items-center">
-            <img src={img(o.photo)} alt="" className="size-20 rounded-xl object-cover" />
+            <img src={img(o.photo)} alt="" className="size-20 rounded-xl object-cover" loading="lazy" decoding="async" />
             <div className="flex-1"><p className="font-semibold">{o.quantity} × {o.title_snapshot}</p><p className="text-xs text-muted">{DELIVERY[o.delivery_mode]} · paiement direct par {PAY[o.pay_method]}</p></div>
             <p className="font-display font-bold text-orange text-lg">{fcfa(o.total_fcfa)}</p>
           </div>

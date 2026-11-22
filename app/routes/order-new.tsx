@@ -2,7 +2,7 @@
 import { Form, Link, redirect, useActionData, useLoaderData, useNavigation, data } from 'react-router';
 import { useState } from 'react';
 import { ArrowLeft, MapPin, Truck, Store, Wallet, ShieldCheck, Send, BadgeCheck } from 'lucide-react';
-import { api, requireMe, formError } from '~/lib/api.server';
+import { api, requireMe, formError, idemOf, newIdem } from '~/lib/api.server';
 import { fcfa, img, PAY, DELIVERY } from '~/lib/format';
 import { Alert } from '~/components/ui';
 
@@ -12,11 +12,11 @@ export async function loader({ request, params }: any) {
   const r = await api(request, `/listings/${params.id}`);
   if (!r.ok) throw data('Annonce introuvable.', { status: 404 });
   if (r.data.listing.shop.ownerId === me.user.id) throw redirect(`/a/${params.id}`);
-  return { l: r.data.listing };
+  return { l: r.data.listing, idem: newIdem() };
 }
 export async function action({ request, params }: any) {
   const f = await request.formData();
-  const r = await api(request, '/orders', { json: { listingId: params.id, quantity: Number(f.get('quantity') || 1), deliveryMode: f.get('deliveryMode'), payMethod: f.get('payMethod'), note: f.get('note') || undefined } });
+  const r = await api(request, '/orders', { json: { listingId: params.id, quantity: Number(f.get('quantity') || 1), deliveryMode: f.get('deliveryMode'), payMethod: f.get('payMethod'), note: f.get('note') || undefined }, idem: idemOf(f) });
   return r.ok ? redirect(`/commandes/${r.data.order.id}`) : formError(r);
 }
 
@@ -24,7 +24,7 @@ const DICON: Record<string, any> = { hand: MapPin, delivery: Truck, pickup: Stor
 const DSUB: Record<string, string> = { hand: 'Lieu convenu dans SM-Chat', delivery: 'Organisée par le commerçant, tarif à convenir', pickup: 'Dans la boutique du commerçant' };
 
 export default function OrderNew() {
-  const { l } = useLoaderData<typeof loader>();
+  const { l, idem } = useLoaderData<typeof loader>();
   const a = useActionData<typeof action>() as any;
   const busy = useNavigation().state === 'submitting';
   const [qty, setQty] = useState(1);
@@ -41,10 +41,11 @@ export default function OrderNew() {
       <Link prefetch="intent" to={`/a/${l.id}`} className="inline-flex items-center gap-2 text-sm text-muted hover:text-indigo mb-3"><ArrowLeft className="size-4" />Retour À L’Annonce</Link>
       <h1 className="font-display text-2xl md:text-3xl font-bold text-indigo animate-fade-up">Envoyer Une Commande</h1>
       <Form method="post" className="grid lg:grid-cols-[1fr_360px] gap-6 mt-5">
+        <input type="hidden" name="idem" value={idem} />
         <div className="space-y-5">
           {a?.error && <Alert>{a.error}</Alert>}
           <div className="card p-4 flex gap-4 items-center animate-fade-up">
-            <img src={img(l.photos?.[0])} alt="" className="size-20 rounded-xl object-cover" style={{ viewTransitionName: `photo-${l.id}` }} />
+            <img src={img(l.photos?.[0])} alt="" className="size-20 rounded-xl object-cover" style={{ viewTransitionName: `photo-${l.id}` }} loading="lazy" decoding="async" />
             <div className="flex-1 min-w-0">
               <p className="font-semibold truncate">{l.title}</p>
               <p className="text-xs text-muted flex items-center gap-1">{l.shop.name}<BadgeCheck className="size-3.5 text-turquoise" /></p>

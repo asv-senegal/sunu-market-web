@@ -79,15 +79,25 @@ function NavIcon({ to, label, count, children }: any) {
 
 // Barre des 12 catégories, menu déroulant au survol (modèle Vinted)
 function CategoryBar({ cats }: { cats: Cat[] }) {
+  // Catégorie dont le menu vient d'être utilisé : il reste fermé tant que la souris ne quitte pas l'onglet,
+  // sinon le survol (ou le focus du lien cliqué) le rouvrirait au-dessus de la page de destination.
+  const [shut, setShut] = useState<string | null>(null);
+  // Les photos des menus ne sont chargées qu'au premier survol de la barre (12 images de moins par page)
+  const [armed, setArmed] = useState(false);
+  const close = (slug: string) => (e: React.MouseEvent) => {
+    if (!(e.target as HTMLElement).closest('a')) return;
+    setShut(slug);
+    (document.activeElement as HTMLElement | null)?.blur();
+  };
   return (
-    <nav className="hidden md:block border-t border-sable-dark/60" aria-label="Catégories">
-      <ul className="container-x flex justify-between">
+    <nav className="hidden md:block border-t border-sable-dark/60" aria-label="Catégories" onMouseEnter={() => setArmed(true)} onFocus={() => setArmed(true)}>
+      <ul className="container-x flex justify-between gap-x-5 overflow-x-auto lg:overflow-x-visible [scrollbar-width:none]">
         {cats.map((c) => (
-          <li key={c.slug} className="group">
+          <li key={c.slug} className="group" onClick={close(c.slug)} onMouseLeave={() => shut === c.slug && setShut(null)}>
             <Link prefetch="intent" to={catHref(c)} className="block py-2.5 text-[13px] font-medium text-ink/80 border-b-2 border-transparent group-hover:text-orange group-hover:border-orange whitespace-nowrap">
               {c.name}
             </Link>
-            {c.subs.length > 0 && <MegaMenu cat={c} />}
+            {c.subs.length > 0 && <MegaMenu cat={c} shut={shut === c.slug} armed={armed} />}
           </li>
         ))}
       </ul>
@@ -95,10 +105,13 @@ function CategoryBar({ cats }: { cats: Cat[] }) {
   );
 }
 
-function MegaMenu({ cat }: { cat: Cat }) {
+function MegaMenu({ cat, shut, armed }: { cat: Cat; shut: boolean; armed: boolean }) {
   const Icon = CAT_ICON[cat.icon] || Shapes;
+  const open = shut
+    ? 'pointer-events-none'
+    : 'group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-y-0';
   return (
-    <div className="invisible opacity-0 -translate-y-2 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-y-0 transition duration-200 delay-75 absolute left-0 right-0 top-full bg-white border-t border-sable-dark shadow-xl">
+    <div data-megamenu={cat.slug} className={`invisible opacity-0 -translate-y-2 ${open} transition duration-200 delay-75 absolute left-0 right-0 top-full bg-white border-t border-sable-dark shadow-xl`}>
       <div className="container-x grid grid-cols-[1fr_260px] gap-8 py-6 min-h-[300px]">
         <div>
           <Link prefetch="intent" to={catHref(cat)} className="inline-flex items-center gap-2 font-display font-semibold text-indigo mb-4">
@@ -116,7 +129,7 @@ function MegaMenu({ cat }: { cat: Cat }) {
           </ul>
         </div>
         <Link prefetch="intent" to={catHref(cat)} className="relative rounded-2xl overflow-hidden block">
-          <img src={`/demo/${CAT_IMG[cat.slug]}.jpg`} alt="" className="absolute inset-0 size-full object-cover group-hover:scale-105 transition-transform duration-[1200ms]" loading="lazy" />
+          {armed && <img src={`/demo/${CAT_IMG[cat.slug]}.jpg`} alt="" className="absolute inset-0 size-full object-cover group-hover:scale-105 transition-transform duration-[1200ms]" loading="lazy" decoding="async" />}
           <span className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-indigo/90 to-transparent text-white font-display font-semibold">{cat.name}</span>
         </Link>
       </div>
@@ -175,25 +188,25 @@ export function Footer() {
           </div>
         ))}
       </div>
-      <div className="container-x py-8 border-t border-white/10 grid gap-8 md:grid-cols-[auto_1fr_auto] items-center">
-        <div className="flex gap-3" aria-label="Réseaux sociaux">
+      <div className="container-x py-8 border-t border-white/10 grid gap-8 lg:grid-cols-[auto_1fr_auto] items-center">
+        <div className="flex flex-wrap justify-center lg:justify-start gap-3" aria-label="Réseaux sociaux">
           {SOCIAL.map((s) => (
             <span key={s} className="size-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center" title={`${s} (lien à venir)`}>
               <Brand name={s} className="size-[18px] text-white" />
             </span>
           ))}
         </div>
-        <div className="h-12 overflow-hidden relative" aria-label="Avis de membres (exemples)">
+        <div className="h-28 lg:h-12 overflow-hidden relative min-w-0" aria-label="Avis de membres (exemples)">
           <ul className="animate-[ticker_16s_linear_infinite] motion-reduce:animate-none">
             {[...REVIEWS, REVIEWS[0]].map(([who, txt], i) => (
-              <li key={i} className="h-12 flex items-center justify-center gap-2 text-sm text-center">
-                <span className="flex text-orange">{[0, 1, 2, 3, 4].map((k) => <Star key={k} className="size-3.5 fill-current" />)}</span>
-                <span>« {txt} »</span><span className="text-white/60">{who}</span>
+              <li key={i} className="h-28 lg:h-12 flex flex-col lg:flex-row items-center justify-center gap-1.5 lg:gap-2 px-2 text-sm text-center">
+                <span className="flex shrink-0 text-orange">{[0, 1, 2, 3, 4].map((k) => <Star key={k} className="size-3.5 fill-current" />)}</span>
+                <span className="max-w-sm lg:max-w-none lg:truncate">« {txt} »</span><span className="shrink-0 text-xs lg:text-sm text-white/60">{who}</span>
               </li>
             ))}
           </ul>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-center lg:justify-start gap-2">
           {[['apple', 'App Store'], ['googleplay', 'Google Play']].map(([b, l]) => (
             <span key={b} className="flex items-center gap-2 rounded-xl border border-white/25 px-3 py-1.5">
               <Brand name={b} className="size-5 text-white" />

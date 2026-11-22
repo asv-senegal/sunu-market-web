@@ -18,7 +18,7 @@ export function OrderCard({ o, role }: { o: any; role: 'buyer' | 'seller' }) {
   return (
     <div className="card p-4">
       <div className="flex gap-3">
-        <img src={img(o.photo)} alt="" className="size-16 rounded-xl object-cover shrink-0" />
+        <img src={img(o.photo)} alt="" className="size-16 rounded-xl object-cover shrink-0" loading="lazy" decoding="async" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2"><span className="text-xs text-muted">{o.ref}</span><span className={`chip ${st.cls}`}>{st.label}</span></div>
           <p className="font-semibold text-sm truncate mt-0.5">{o.quantity} × {o.title_snapshot}</p>

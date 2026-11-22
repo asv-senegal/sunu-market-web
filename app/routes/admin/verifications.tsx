@@ -42,7 +42,7 @@ function Item({ v }: { v: any }) {
       {v.has_files && (
         <div className="grid grid-cols-2 gap-3 mt-4 max-w-xl">
           {['document', 'selfie'].map((k) => (
-            <figure key={k}><img src={`/kyc/${v.id}/${k}`} alt={k === 'document' ? 'Pièce d’identité' : 'Selfie'} className="w-full aspect-[4/3] object-cover rounded-xl bg-sable-dark" /><figcaption className="text-xs text-muted mt-1">{k === 'document' ? 'Pièce D’Identité' : 'Selfie'}</figcaption></figure>
+            <figure key={k}><img src={`/kyc/${v.id}/${k}`} alt={k === 'document' ? 'Pièce d’identité' : 'Selfie'} className="w-full aspect-[4/3] object-cover rounded-xl bg-sable-dark" loading="lazy" decoding="async" /><figcaption className="text-xs text-muted mt-1">{k === 'document' ? 'Pièce D’Identité' : 'Selfie'}</figcaption></figure>
           ))}
         </div>
       )}

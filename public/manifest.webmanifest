@@ -1,0 +1,26 @@
+{
+  "id": "/",
+  "name": "Sunu-Market : le centre commercial en ligne de Dakar",
+  "short_name": "Sunu-Market",
+  "description": "Achetez et vendez entre membres vérifiés à Dakar. SM-Chat, paiement direct, zéro commission.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#FFF7EC",
+  "theme_color": "#1B2A6B",
+  "categories": ["shopping", "business"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Rechercher", "url": "/recherche", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "SM-Chat", "url": "/messages", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Poser Une Annonce", "url": "/ma-boutique/annonces/nouvelle", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

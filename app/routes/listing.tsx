@@ -2,14 +2,14 @@
 import { Form, Link, redirect, useActionData, useLoaderData, useNavigation, data } from 'react-router';
 import { useState } from 'react';
 import { BadgeCheck, MapPin, Star, MessageCircle, ShoppingBag, Flag, Info, Megaphone } from 'lucide-react';
-import { api, getMe, formError } from '~/lib/api.server';
+import { api, getMe, formError, idemOf, newIdem } from '~/lib/api.server';
 import { fcfa, img, CONDITION, PAY, DELIVERY, dateFr } from '~/lib/format';
 import { Alert } from '~/components/ui';
 
 export async function loader({ request, params }: any) {
   const [r, me] = await Promise.all([api(request, `/listings/${params.id}`), getMe(request)]);
   if (!r.ok) throw data('Annonce introuvable.', { status: 404 });
-  return { l: r.data.listing, me };
+  return { l: r.data.listing, me, idem: newIdem() };
 }
 
 export const meta = ({ data: d }: any) => [
@@ -30,7 +30,7 @@ export async function action({ request, params }: any) {
   if (intent === 'order') {
     const r = await api(request, '/orders', { json: {
       listingId: params.id, quantity: Number(f.get('quantity') || 1), deliveryMode: f.get('deliveryMode'), payMethod: f.get('payMethod'), note: f.get('note') || undefined,
-    } });
+    }, idem: idemOf(f) });
     if (r.status === 403) return redirect('/verification');
     return r.ok ? redirect(`/messages/${r.data.order.conversation_id}?commande=${r.data.order.ref}`) : formError(r);
   }
@@ -39,7 +39,7 @@ export async function action({ request, params }: any) {
 }
 
 export default function Listing() {
-  const { l, me } = useLoaderData<typeof loader>();
+  const { l, me, idem } = useLoaderData<typeof loader>();
   const err = useActionData<typeof action>() as any;
   const nav = useNavigation();
   const [photo, setPhoto] = useState(0);
@@ -57,14 +57,14 @@ export default function Listing() {
       <div className="grid lg:grid-cols-[1.2fr_1fr] gap-8">
         <div>
           <div className="relative aspect-[4/5] md:aspect-[5/4] rounded-3xl overflow-hidden bg-sable-dark">
-            <img key={photo} src={img(photos[photo])} alt={l.title} className="size-full object-cover animate-[fade-in_.4s_ease-out]" style={photo === 0 ? { viewTransitionName: `photo-${l.id}` } : undefined} />
+            <img key={photo} src={img(photos[photo])} alt={l.title} className="size-full object-cover animate-[fade-in_.4s_ease-out]" style={photo === 0 ? { viewTransitionName: `photo-${l.id}` } : undefined} loading="eager" fetchPriority="high" decoding="async" />
             {l.featured && <span className="chip absolute top-3 left-3 bg-indigo text-white"><Megaphone className="size-3" />Mis En Avant</span>}
           </div>
           {photos.length > 1 && (
             <div className="flex gap-2 mt-3">
               {photos.map((p, i) => (
                 <button key={p} onClick={() => setPhoto(i)} className={`size-16 rounded-xl overflow-hidden border-2 ${i === photo ? 'border-orange' : 'border-transparent'}`} aria-label={`Photo ${i + 1}`}>
-                  <img src={p} alt="" className="size-full object-cover" />
+                  <img src={p} alt="" className="size-full object-cover" loading="lazy" decoding="async" />
                 </button>
               ))}
             </div>
@@ -112,6 +112,7 @@ export default function Listing() {
               </div>
               {mode === 'message' && (
                 <Form method="post" className="card p-5 space-y-3 animate-slide-down">
+                  <input type="hidden" name="idem" value={idem} />
                   <input type="hidden" name="intent" value="message" />
                   <label className="block"><span className="label">Votre Message</span>
                     <textarea name="body" rows={3} required className="input h-auto py-2" defaultValue="Bonjour, cet article est-il toujours disponible ?" />

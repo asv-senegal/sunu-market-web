@@ -24,6 +24,9 @@ html { scrollbar-gutter: stable; }
 .overflow-y-auto, .overflow-x-auto { -webkit-overflow-scrolling: touch; }
 button, a, input, [role="option"] { touch-action: manipulation; }
 body { @apply bg-sable text-ink font-sans antialiased; }
+/* Aucun défilement horizontal sur téléphone : les décors et animations (glissements, zoom, halos) ne doivent jamais élargir la page.
+   « clip » ne crée pas de zone de défilement, l'en-tête collant continue de fonctionner. */
+body { overflow-x: clip; }
 h1, h2, h3, .font-display { font-family: var(--font-display); }
 :focus-visible { outline: 3px solid var(--color-turquoise); outline-offset: 2px; }
 
@@ -38,7 +41,8 @@ h1, h2, h3, .font-display { font-family: var(--font-display); }
 @utility chip { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold; }
 @utility container-x { @apply mx-auto w-full max-w-7xl px-4 md:px-6; }
 
-@keyframes ticker { 0%, 18% { transform: translateY(0); } 25%, 43% { transform: translateY(-3rem); } 50%, 68% { transform: translateY(-6rem); } 75%, 93% { transform: translateY(-9rem); } 100% { transform: translateY(-12rem); } }
+/* 5 lignes (4 avis + la première répétée) : chaque pas vaut 20 % de la liste, quelle que soit la hauteur d'une ligne */
+@keyframes ticker { 0%, 18% { transform: translateY(0); } 25%, 43% { transform: translateY(-20%); } 50%, 68% { transform: translateY(-40%); } 75%, 93% { transform: translateY(-60%); } 100% { transform: translateY(-80%); } }
 
 /* ================= Animations Sunu-Market =================
    Légères (CSS + IntersectionObserver), désactivées si l'utilisateur préfère réduire les animations. */
@@ -62,10 +66,25 @@ h1, h2, h3, .font-display { font-family: var(--font-display); }
 /* Apparition au défilement : visible par défaut sans JavaScript */
 .js [data-reveal] { opacity: 0; transform: translateY(16px); transition: opacity .45s cubic-bezier(.2,.7,.2,1), transform .45s cubic-bezier(.2,.7,.2,1); transition-delay: var(--d, 0ms); will-change: opacity, transform; }
 .js [data-reveal].is-visible { will-change: auto; }
-.js [data-reveal="left"] { transform: translateX(-18px); }
-.js [data-reveal="right"] { transform: translateX(18px); }
+/* Glissement latéral seulement sur grand écran : sur téléphone il élargirait la page avant l'apparition */
+@media (min-width: 1024px) {
+  .js [data-reveal="left"] { transform: translateX(-18px); }
+  .js [data-reveal="right"] { transform: translateX(18px); }
+}
 .js [data-reveal="zoom"] { transform: scale(.97); }
 .js [data-reveal].is-visible { opacity: 1; transform: none; }
+
+@keyframes install-in { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+
+/* ================= Chargement ================= */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spinner-in { from { opacity: 0; transform: translate(-50%, -50%) scale(.9); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+.spinner { display: inline-block; flex-shrink: 0; border-radius: 9999px; border: 3px solid var(--color-indigo-100); border-top-color: var(--color-orange); animation: spin .7s linear infinite; }
+/* Apparition retardée : les pages rapides ne font pas clignoter la roue */
+.page-spinner { opacity: 0; animation: spinner-in .2s ease-out .3s forwards; }
+/* Bouton en cours d'envoi : roue devant le texte, clics bloqués */
+button[aria-busy="true"] { pointer-events: none; opacity: .85; }
+button[aria-busy="true"]::before { content: ""; width: 1em; height: 1em; flex-shrink: 0; border-radius: 9999px; border: 2px solid currentColor; border-right-color: transparent; animation: spin .7s linear infinite; }
 
 .animate-fade-up { animation: fade-up .5s cubic-bezier(.2,.7,.2,1) both; }
 .animate-pop { animation: pop-in .28s cubic-bezier(.2,.8,.3,1.2) both; }

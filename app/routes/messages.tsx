@@ -29,7 +29,7 @@ export default function Messages() {
             {list.map((c: any) => (
               <li key={c.id}>
                 <NavLink prefetch="intent" to={`/messages/${c.id}`} className={({ isActive }) => `flex gap-3 p-3 border-b border-sable-dark/60 ${isActive ? 'bg-indigo-50' : 'hover:bg-sable'}`}>
-                  <img src={img(c.photo)} alt="" className="size-12 rounded-xl object-cover shrink-0" />
+                  <img src={img(c.photo)} alt="" className="size-12 rounded-xl object-cover shrink-0" loading="lazy" decoding="async" />
                   <div className="min-w-0 flex-1">
                     <p className="flex justify-between gap-2"><span className="font-semibold text-sm truncate">{c.other_name}</span><span className="text-[11px] text-muted whitespace-nowrap">{ago(c.last_message_at)}</span></p>
                     <p className="text-xs text-muted truncate">{c.listing_title} · {fcfa(c.price_fcfa)}</p>

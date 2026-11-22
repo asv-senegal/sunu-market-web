@@ -2,16 +2,16 @@
 import { Form, redirect, useActionData, useLoaderData, useNavigation, Link } from 'react-router';
 import { useMemo, useState } from 'react';
 import { Coins, Lock, Sparkles, ArrowLeft } from 'lucide-react';
-import { api, apiOrThrow, formError } from '~/lib/api.server';
+import { api, apiOrThrow, formError, idemOf, newIdem } from '~/lib/api.server';
 import { fcfa, PAY, dateFr } from '~/lib/format';
 import { Alert, Field, PageTitle } from '~/components/ui';
 import { stagger } from '~/components/motion';
 
 export const meta = () => [{ title: 'Recharger Mes Crédits SM-IA | Sunu-Market' }];
-export const loader = ({ request }: any) => apiOrThrow(request, '/me/smia');
+export const loader = async ({ request }: any) => ({ ...(await apiOrThrow(request, '/me/smia')), idem: newIdem() });
 export async function action({ request }: any) {
   const f = await request.formData();
-  const r = await api(request, '/me/smia/recharge', { json: { amount: Number(f.get('amount')), payMethod: f.get('payMethod'), payRef: f.get('payRef') || undefined } });
+  const r = await api(request, '/me/smia/recharge', { json: { amount: Number(f.get('amount')), payMethod: f.get('payMethod'), payRef: f.get('payRef') || undefined }, idem: idemOf(f) });
   if (!r.ok) return formError(r);
   if (r.data.payment.checkout_url) return redirect(r.data.payment.checkout_url);
   return redirect(`/paiement/${r.data.payment.ref}`);
@@ -33,6 +33,7 @@ export default function Recharge() {
       <PageTitle title="Recharger Mes Crédits SM-IA" sub={`Solde actuel : ${d.balance.toLocaleString('fr-FR')} crédits.`} />
       {a?.error && <div className="mb-4"><Alert>{a.error}</Alert></div>}
       <Form method="post" className="grid xl:grid-cols-[1fr_380px] gap-6">
+        <input type="hidden" name="idem" value={d.idem} />
         <div className="space-y-5">
           <section className="card p-5">
             <h2 className="font-display font-semibold text-indigo mb-3">1- Montant De La Recharge</h2>

@@ -80,7 +80,7 @@ export default function Home() {
             const Icon = CAT_ICON[c.icon];
             return (
               <Link prefetch="intent" key={c.slug} to={catHref(c)} viewTransition className="group relative aspect-square rounded-2xl overflow-hidden" {...stagger(i, 40)}>
-                <img src={`/demo/${CAT_IMG[c.slug]}.jpg`} alt="" loading="lazy" className="absolute inset-0 size-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                <img src={`/demo/${CAT_IMG[c.slug]}.jpg`} alt="" loading="lazy" className="absolute inset-0 size-full object-cover group-hover:scale-110 transition-transform duration-700" decoding="async" />
                 <span className="absolute inset-0 bg-gradient-to-t from-indigo/90 via-indigo/20 to-transparent group-hover:from-orange/85 transition-colors duration-500" />
                 <Icon className="absolute top-2.5 left-2.5 size-5 text-white/90 -translate-y-1 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition duration-300" />
                 <span className="absolute bottom-2 left-2 right-2 text-white text-xs sm:text-sm font-semibold leading-tight">{c.name}</span>
@@ -123,7 +123,7 @@ export default function Home() {
           <Carousel label="Boutiques">
             {d.shops.map((s: any, i: number) => (
               <Link prefetch="intent" key={s.id} to={`/b/${s.slug}`} viewTransition className="card overflow-hidden lift snap-start shrink-0 w-[78%] sm:w-[45%] lg:w-[24%]" {...stagger(i)}>
-                <div className="h-32 overflow-hidden"><img src={s.banner || '/demo/artisan_stall.jpg'} alt="" className="h-full w-full object-cover hover:scale-105 transition-transform duration-700" loading="lazy" /></div>
+                <div className="h-32 overflow-hidden"><img src={s.banner || '/demo/artisan_stall.jpg'} alt="" className="h-full w-full object-cover hover:scale-105 transition-transform duration-700" loading="lazy" decoding="async" /></div>
                 <div className="p-4">
                   <p className="font-display font-semibold text-indigo flex items-center gap-1">{s.name}<BadgeCheck className="size-4 text-turquoise" /></p>
                   <p className="text-xs text-muted flex items-center gap-1 mt-0.5"><MapPin className="size-3" />{s.quarter} · {s.listings} annonces</p>

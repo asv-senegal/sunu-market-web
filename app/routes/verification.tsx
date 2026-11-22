@@ -76,7 +76,7 @@ function Upload({ icon: Icon, name, label, hint, preview, onPick, capture }: any
     <label className="block cursor-pointer">
       <span className="label">{label}</span>
       <span className="flex items-center gap-4 rounded-2xl border-2 border-dashed border-sable-dark bg-sable p-4 hover:border-turquoise">
-        {preview ? <img src={preview} alt="" className="size-16 rounded-xl object-cover" /> : <span className="size-16 rounded-xl bg-white text-indigo flex items-center justify-center"><Icon className="size-7" /></span>}
+        {preview ? <img src={preview} alt="" className="size-16 rounded-xl object-cover" loading="lazy" decoding="async" /> : <span className="size-16 rounded-xl bg-white text-indigo flex items-center justify-center"><Icon className="size-7" /></span>}
         <span className="text-sm"><span className="font-semibold text-indigo block">{preview ? 'Changer L’Image' : 'Prendre Ou Choisir Une Photo'}</span><span className="text-muted text-xs">{hint}</span></span>
       </span>
       <input type="file" name={name} accept="image/jpeg,image/png,image/webp" capture={capture} required className="sr-only"

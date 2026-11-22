@@ -3,7 +3,7 @@ export function AuthFrame({ title, sub, step, children }: { title: string; sub?:
   return (
     <div className="container-x py-8 md:py-14 grid md:grid-cols-2 gap-10 items-center max-w-5xl">
       <div className="hidden md:block relative rounded-3xl overflow-hidden aspect-[4/5]">
-        <img src="/demo/tailor_sewing.jpg" alt="" className="absolute inset-0 size-full object-cover kenburns" />
+        <img src="/demo/tailor_sewing.jpg" alt="" className="absolute inset-0 size-full object-cover kenburns" loading="eager" fetchPriority="high" decoding="async" />
         <div className="absolute inset-0 bg-gradient-to-t from-indigo/90 to-transparent" />
         <p className="absolute bottom-6 left-6 right-6 text-white font-display text-2xl font-semibold leading-snug">Des membres vérifiés, des échanges en confiance.</p>
       </div>

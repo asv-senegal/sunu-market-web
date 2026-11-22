@@ -27,7 +27,7 @@ export default function Review() {
     <div className="container-x py-6 max-w-2xl">
       <Link prefetch="intent" to={`/commandes/${o.id}`} className="inline-flex items-center gap-2 text-sm text-muted hover:text-indigo mb-3"><ArrowLeft className="size-4" />Commande {o.ref}</Link>
       <Form method="post" className="card p-6 md:p-10 space-y-6 text-center animate-fade-up">
-        <img src={img(o.photo)} alt="" className="size-20 rounded-2xl object-cover mx-auto" />
+        <img src={img(o.photo)} alt="" className="size-20 rounded-2xl object-cover mx-auto" loading="lazy" decoding="async" />
         <div><h1 className="font-display text-2xl font-bold text-indigo">Comment S’est Passée La Remise ?</h1><p className="text-sm text-muted mt-1">{role === 'buyer' ? o.shop_name : o.buyer_name} · {o.title_snapshot}</p></div>
         {a?.error && <Alert>{a.error}</Alert>}
         <input type="hidden" name="rating" value={rating} />

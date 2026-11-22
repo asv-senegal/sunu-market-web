@@ -1,0 +1,152 @@
+# Mise en ligne automatique du site sur PlanetHoster (N0C) à chaque modification de la branche main.
+# 1. GitHub vérifie les types et construit le site (rendu serveur React Router).
+# 2. Le build et le fichier de démarrage sont envoyés par FTP (seuls les fichiers modifiés), avec tmp/restart.txt :
+#    l'application redémarre d'elle-même sur la nouvelle version.
+# 3. Facultatif, par SSH : « npm install » dans l'environnement Node de N0C. Sans SSH, ce n'est nécessaire
+#    que si package.json change : le workflow vous prévient (bouton « Run NPM Install » dans N0C).
+#
+# Réglages à faire une fois dans GitHub : Settings → Secrets and variables → Actions
+#   Secrets   : FTP_SERVER, FTP_USERNAME, FTP_PASSWORD
+#               SSH_HOST, SSH_USERNAME, SSH_PRIVATE_KEY   (facultatifs)
+#   Variables : APP_DIR      dossier de l'application dans votre espace (par défaut sunumarketweb)
+#               FTP_DIR      même dossier vu par le compte FTP (par défaut sunumarketweb/)
+#               FTP_PROTOCOL ftps (par défaut) ou ftp
+#               NODE_VERSION version majeure choisie dans N0C (par défaut 22)
+#               SSH_PORT     port SSH de N0C (par défaut 5022)
+#               HEALTH_URL   adresse de contrôle, ex. https://votredomaine.com/ (facultatif, conseillé)
+name: Mise en ligne du site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # bouton « Run workflow » pour relancer à la main
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Construction et mise en ligne
+    runs-on: ubuntu-latest
+    env:
+      APP_DIR: ${{ vars.APP_DIR || 'sunumarketweb' }}
+      NODE_MAJOR: ${{ vars.NODE_VERSION || '22' }}
+    steps:
+      - name: Vérifier les réglages
+        id: check
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          if [ -z "$FTP_SERVER" ]; then
+            echo "::warning::Secrets FTP absents : site construit mais pas envoyé. Ajoutez FTP_SERVER, FTP_USERNAME et FTP_PASSWORD."
+            echo "ftp=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ftp=true" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -z "$SSH_HOST" ]; then echo "ssh=false" >> "$GITHUB_OUTPUT"; else echo "ssh=true" >> "$GITHUB_OUTPUT"; fi
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # pour savoir si les dépendances ont changé depuis la dernière mise en ligne
+
+      - name: Dépendances modifiées ?
+        id: deps
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"   # premier envoi ou relance manuelle : par prudence
+          elif git diff --quiet "$BEFORE" HEAD -- package.json package-lock.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ vars.NODE_VERSION || 22 }}
+          cache: npm
+
+      - name: Vérifier et construire le site
+        run: |
+          npm ci
+          npm run typecheck
+          npm run build
+
+      # Seuls les fichiers utiles au serveur sont envoyés. Jamais : .env, node_modules.
+      # tmp/restart.txt change à chaque envoi : Passenger redémarre l'application à la requête suivante.
+      - name: Préparer les fichiers à envoyer
+        run: |
+          mkdir -p deploy/tmp
+          cp -r build deploy/
+          cp package.json package-lock.json server.cjs .env.example deploy/
+          echo "${GITHUB_SHA} $(date -u +%Y-%m-%dT%H:%M:%SZ)" > deploy/tmp/restart.txt
+
+      - name: Envoyer sur le serveur
+        if: steps.check.outputs.ftp == 'true'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ${{ vars.FTP_PROTOCOL || 'ftps' }}
+          local-dir: ./deploy/
+          server-dir: ${{ vars.FTP_DIR || 'sunumarketweb/' }}
+
+      - name: Rappel dépendances (sans SSH)
+        if: steps.check.outputs.ftp == 'true' && steps.check.outputs.ssh != 'true' && steps.deps.outputs.changed == 'true'
+        run: |
+          echo "::warning::package.json a peut-être changé : dans N0C → Node.js → votre application, cliquez « Run NPM Install » puis « Restart »."
+
+      - name: Préparer la connexion SSH
+        if: steps.check.outputs.ftp == 'true' && steps.check.outputs.ssh == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ vars.SSH_PORT || '5022' }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      # Avec SSH : dépendances installées dans l'environnement virtuel Node de N0C
+      # (node_modules y est un lien : « npm install », jamais « npm ci »).
+      - name: Installer (SSH)
+        if: steps.check.outputs.ftp == 'true' && steps.check.outputs.ssh == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ vars.SSH_PORT || '5022' }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          DEPS_CHANGED: ${{ steps.deps.outputs.changed }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$SSH_PORT" -o BatchMode=yes "$SSH_USERNAME@$SSH_HOST" bash -s -- "$APP_DIR" "$NODE_MAJOR" "$DEPS_CHANGED" <<'REMOTE'
+          set -euo pipefail
+          APP_DIR="$1"; NODE_MAJOR="$2"; DEPS_CHANGED="$3"
+          source "$HOME/nodevenv/$APP_DIR/$NODE_MAJOR/bin/activate"
+          cd "$HOME/$APP_DIR"
+          test -f .env || { echo "::error::$HOME/$APP_DIR/.env est absent : créez-le (voir le guide de mise en ligne)."; exit 1; }
+          if [ "$DEPS_CHANGED" = "true" ] || [ ! -e node_modules/react-router ]; then
+            npm install --omit=dev --no-audit --no-fund
+          fi
+          touch tmp/restart.txt
+          echo "Site installé et redémarré."
+          REMOTE
+
+      - name: Contrôler le site en ligne
+        if: steps.check.outputs.ftp == 'true' && vars.HEALTH_URL != ''
+        env:
+          HEALTH_URL: ${{ vars.HEALTH_URL }}
+        run: |
+          for i in $(seq 1 12); do
+            if curl -fsS --max-time 30 -o /dev/null "$HEALTH_URL"; then echo "Site en ligne."; exit 0; fi
+            sleep 10
+          done
+          echo "::error::Le site ne répond pas sur $HEALTH_URL. Si package.json a changé, cliquez « Run NPM Install » puis « Restart » dans N0C ; sinon consultez le journal de l'application dans N0C."
+          exit 1
+
+      - name: Nettoyer la clé SSH
+        if: always()
+        run: rm -f ~/.ssh/id_deploy

@@ -2,7 +2,7 @@
 import { Form, redirect, useActionData, useLoaderData, useNavigation, useSearchParams, useRouteLoaderData } from 'react-router';
 import { useState } from 'react';
 import { Megaphone, Rocket, TrendingUp, Check, ImagePlus, Eye, MousePointerClick } from 'lucide-react';
-import { api, apiOrThrow, formError } from '~/lib/api.server';
+import { api, apiOrThrow, formError, idemOf, newIdem } from '~/lib/api.server';
 import { fcfa, img, PAY, dateFr, QUARTERS } from '~/lib/format';
 import { Alert, Field, PageTitle } from '~/components/ui';
 import type { Cat } from '~/components/Shell';
@@ -11,13 +11,13 @@ import { Select } from '~/components/Select';
 export const meta = () => [{ title: 'Campagnes Et Mise En Avant | Sunu-Market' }];
 export async function loader({ request }: any) {
   const [p, l] = await Promise.all([apiOrThrow(request, '/me/promotions'), apiOrThrow(request, '/me/shop/listings')]);
-  return { ...p, listings: l.items.filter((x: any) => x.status === 'active') };
+  return { ...p, listings: l.items.filter((x: any) => x.status === 'active'), idem: newIdem() };
 }
 export async function action({ request }: any) {
   const form = await request.formData();
   const clean = new FormData();
   for (const [k, v] of form.entries()) if (!(typeof v === 'object' && (v as File).size === 0) && v !== '') clean.append(k, v);
-  const r = await api(request, '/me/promotions', { form: clean });
+  const r = await api(request, '/me/promotions', { form: clean, idem: idemOf(form) });
   if (!r.ok) return formError(r);
   if (r.data.payment.checkout_url) return redirect(r.data.payment.checkout_url);
   return redirect(`/paiement/${r.data.payment.ref}`);
@@ -52,6 +52,7 @@ export default function Visibility() {
       <PageTitle title="Campagnes Et Mise En Avant" sub="Les contenus payants sont signalés aux acheteurs par la mention « Mis En Avant » ou « Publicité »." />
       {a?.error && <div className="mb-4"><Alert>{a.error}</Alert></div>}
       <Form method="post" encType="multipart/form-data" className="grid xl:grid-cols-[1fr_340px] gap-6">
+        <input type="hidden" name="idem" value={d.idem} />
         <div className="space-y-6">
           <section>
             <h2 className="font-display font-semibold text-indigo mb-3">1- Choisissez Le Service</h2>
@@ -85,7 +86,7 @@ export default function Visibility() {
                 <Field label="Catégorie Ciblée"><Select name="categoryId" defaultValue="" aria-label="Catégorie ciblée" options={[{ value: '', label: 'Toutes' }, ...cats.filter((c) => !c.is_shops).map((c) => ({ value: String(c.id), label: c.name }))]} /></Field>
                 <Field label="Quartier Ciblé"><Select name="quarter" defaultValue="" aria-label="Quartier ciblé" options={[{ value: '', label: 'Tout Dakar' }, ...QUARTERS.map((q) => ({ value: q, label: q }))]} /></Field>
                 <label className="sm:col-span-2 flex items-center gap-3 rounded-2xl border-2 border-dashed border-sable-dark p-4 cursor-pointer hover:border-turquoise">
-                  {banner ? <img src={banner} alt="" className="h-14 w-28 rounded-lg object-cover" /> : <ImagePlus className="size-7 text-indigo" />}
+                  {banner ? <img src={banner} alt="" className="h-14 w-28 rounded-lg object-cover" loading="lazy" decoding="async" /> : <ImagePlus className="size-7 text-indigo" />}
                   <span className="text-sm"><b className="text-indigo block">Image De La Bannière</b><span className="text-xs text-muted">Format large, 1600 × 400 conseillé</span></span>
                   <input type="file" name="image" accept="image/jpeg,image/png,image/webp" required className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; setBanner(f ? URL.createObjectURL(f) : null); }} />
                 </label>
@@ -111,10 +112,10 @@ export default function Visibility() {
           <div className="card p-5 animate-fade-up">
             <p className="text-sm font-semibold text-indigo mb-3">Aperçu Pour Les Acheteurs</p>
             {kind === 'ad' ? (
-              <div className="relative h-24 rounded-xl overflow-hidden bg-indigo">{banner && <img src={banner} alt="" className="size-full object-cover opacity-70" />}<span className="absolute top-2 left-2 chip bg-white/20 text-white text-[10px]">Publicité</span></div>
+              <div className="relative h-24 rounded-xl overflow-hidden bg-indigo">{banner && <img src={banner} alt="" className="size-full object-cover opacity-70" loading="lazy" decoding="async" />}<span className="absolute top-2 left-2 chip bg-white/20 text-white text-[10px]">Publicité</span></div>
             ) : l && (
               <div className="w-40 mx-auto">
-                <div className="relative aspect-[4/5] rounded-2xl overflow-hidden"><img src={img(l.photo)} alt="" className="size-full object-cover" />
+                <div className="relative aspect-[4/5] rounded-2xl overflow-hidden"><img src={img(l.photo)} alt="" className="size-full object-cover" loading="lazy" decoding="async" />
                   <span className="chip absolute top-2 left-2 bg-indigo text-white animate-pop"><Megaphone className="size-3" />Mis En Avant</span></div>
                 <p className="font-display font-semibold mt-2">{kind === 'campaign' && promo !== '' ? <><span className="text-orange">{fcfa(Number(promo))}</span> <s className="text-xs text-muted">{fcfa(l.price_fcfa)}</s></> : fcfa(l.price_fcfa)}</p>
                 <p className="text-xs text-muted line-clamp-1">{l.title}</p>

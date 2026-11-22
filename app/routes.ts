@@ -52,6 +52,7 @@ export default [
   ]),
 
   // Ressources : images de l'API et fichiers privés de vérification (administration seulement)
+  route('favicon.ico', 'routes/favicon.ts'),
   route('files/*', 'routes/files.ts'),
   route('kyc/:id/:kind', 'routes/kyc.ts'),
   route('preuve/:id', 'routes/evidence.ts'),

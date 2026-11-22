@@ -15,8 +15,8 @@ export default function Shop() {
   const { shop, reviews, listings } = useLoaderData<typeof loader>();
   return (
     <div>
-      <div className="h-40 md:h-56 bg-indigo relative">
-        {shop.banner && <img src={shop.banner} alt="" className="size-full object-cover opacity-70 kenburns" />}
+      <div className="h-40 md:h-56 bg-indigo relative overflow-hidden">
+        {shop.banner && <img src={shop.banner} alt="" className="size-full object-cover opacity-70 kenburns" loading="eager" fetchPriority="high" decoding="async" />}
       </div>
       <div className="container-x -mt-12 relative">
         <div className="card p-5 md:p-6 flex flex-wrap items-center gap-4 animate-fade-up">

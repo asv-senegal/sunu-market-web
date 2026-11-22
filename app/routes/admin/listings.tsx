@@ -48,7 +48,7 @@ export default function AdminListings() {
             {d.items.length === 0 && <p className="card p-6 text-sm text-muted">Aucune annonce à examiner.</p>}
             {d.items.map((l: any, i: number) => (
               <div key={l.id} className={`card p-3 flex flex-wrap items-center gap-3 ${l.open_reports ? 'border-orange/40' : ''}`} data-reveal="" style={{ '--d': `${Math.min(i, 8) * 40}ms` } as React.CSSProperties}>
-                <img src={img(l.photo)} alt="" className="size-14 rounded-xl object-cover" />
+                <img src={img(l.photo)} alt="" className="size-14 rounded-xl object-cover" loading="lazy" decoding="async" />
                 <div className="flex-1 min-w-[200px]">
                   <Link prefetch="intent" to={`/a/${l.id}`} className="font-semibold text-sm hover:underline">{l.title}</Link>
                   <p className="text-xs text-muted">{l.shop_name} · {l.category} › {l.sub} · {dateFr(l.created_at)}</p>

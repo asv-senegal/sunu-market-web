@@ -1,6 +1,6 @@
 // Effets visuels : apparition au défilement, compteurs animés, carrousels, barre de progression
 import { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigation, Link } from 'react-router';
+import { useLocation, useNavigation, useFetchers, Link } from 'react-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Observe tous les éléments [data-reveal] de la page et les révèle à l'entrée dans l'écran
@@ -40,11 +40,59 @@ export function CountUp({ value, format = (n: number) => n.toLocaleString('fr-FR
   return <span ref={ref}>{format(n)}</span>;
 }
 
-// Barre fine en haut de l'écran pendant les chargements de page
-export function NavProgress() {
+// Une action est en cours : changement de page, formulaire ou envoi en arrière-plan (fetcher).
+// Le rafraîchissement automatique (SM-Chat, paiement) passe par le revalidateur et n'est pas compté.
+export function useBusy() {
   const nav = useNavigation();
-  if (nav.state === 'idle') return null;
+  const fetchers = useFetchers();
+  const submitting = fetchers.some((f) => f.state === 'submitting' || (f.state === 'loading' && f.formMethod && f.formMethod !== 'GET'));
+  return { page: nav.state !== 'idle', any: nav.state !== 'idle' || submitting };
+}
+
+// Barre fine en haut de l'écran pendant les chargements de page et les envois
+export function NavProgress() {
+  const { any } = useBusy();
+  if (!any) return null;
   return <div className="fixed top-0 inset-x-0 z-[60] h-0.5"><div className="nav-progress h-full bg-orange" /></div>;
+}
+
+// Roue de chargement au centre de l'écran. Elle n'apparaît qu'après 300 ms (délai CSS),
+// pour ne pas clignoter sur les pages déjà préchargées.
+export function Spinner({ className = 'size-6' }: { className?: string }) {
+  return <span className={`spinner ${className}`} role="status" aria-label="Chargement" />;
+}
+export function PageSpinner() {
+  const { any } = useBusy();
+  if (!any) return null;
+  return (
+    <div className="page-spinner fixed z-[70] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" aria-live="polite">
+      <div className="rounded-2xl bg-white/95 shadow-xl border border-sable-dark p-4 flex flex-col items-center gap-2">
+        <Spinner className="size-8" />
+        <span className="text-xs font-medium text-indigo">Chargement…</span>
+      </div>
+    </div>
+  );
+}
+
+// Le bouton qui a envoyé un formulaire affiche une roue jusqu'à la fin de l'envoi
+export function useBusyButtons() {
+  const { any } = useBusy();
+  const busy = useRef(any);
+  busy.current = any;
+  useEffect(() => {
+    const onSubmit = (e: SubmitEvent) => {
+      const b = e.submitter as HTMLElement | null;
+      if (!b || b.tagName !== 'BUTTON') return;
+      b.setAttribute('aria-busy', 'true');
+      // Envoi annulé (confirmation refusée…) : rien n'a démarré, on retire la roue
+      setTimeout(() => { if (!busy.current) b.removeAttribute('aria-busy'); }, 400);
+    };
+    document.addEventListener('submit', onSubmit, true);
+    return () => document.removeEventListener('submit', onSubmit, true);
+  }, []);
+  useEffect(() => {
+    if (!any) document.querySelectorAll('button[aria-busy="true"]').forEach((b) => b.removeAttribute('aria-busy'));
+  }, [any]);
 }
 
 // Rangée défilante horizontale avec flèches (accroche magnétique)
@@ -83,7 +131,7 @@ export function HeroSlider({ slides, children }: { slides: Slide[]; children?: R
       onTouchStart={(e) => { touch.current = e.touches[0].clientX; }} onTouchEnd={(e) => { if (touch.current == null) return; const dx = e.changedTouches[0].clientX - touch.current; if (Math.abs(dx) > 40) go(i + (dx < 0 ? 1 : -1)); touch.current = null; }}>
       {slides.map((s, k) => (
         <div key={s.title} className={`absolute inset-0 transition-opacity duration-1000 ${k === i ? 'opacity-100 z-10' : 'opacity-0'}`} aria-hidden={k !== i} role="group" aria-roledescription="diapositive" aria-label={`${k + 1} sur ${slides.length}`}>
-          <img src={s.img} alt="" className={`absolute inset-0 size-full object-cover ${k === i ? 'kenburns' : ''}`} loading={k ? 'lazy' : 'eager'} />
+          <img src={s.img} alt="" className={`absolute inset-0 size-full object-cover ${k === i ? 'kenburns' : ''}`} loading={k ? 'lazy' : 'eager'} decoding="async" />
           <div className="absolute inset-0 bg-gradient-to-r from-indigo via-indigo/85 md:via-indigo/70 to-indigo/10" />
           <div className="relative h-full flex flex-col justify-center md:justify-start p-7 md:px-12 md:pt-12 max-w-xl">
             {k === i && (

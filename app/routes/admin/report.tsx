@@ -25,7 +25,7 @@ function Party({ title, p, messages, party, evidence }: any) {
           {p && <p className="text-xs text-muted">{p.verification_status === 'verified' ? 'Compte vérifié' : 'Non vérifié'}, {p.purchases} achats, {p.sales} ventes{p.rating ? `, ${p.rating} sur 5` : ''}, {p.reports_against} signalement(s) reçu(s)</p>}</div>
       </div>
       {messages.filter((m: any) => m.party === party).map((m: any, i: number) => <p key={i} className="text-sm rounded-xl bg-sable p-3">« {m.body} » <span className="text-xs text-muted block">{dateFr(m.created_at)} {timeFr(m.created_at)}</span></p>)}
-      {evidence.length > 0 && <div className="flex gap-2 flex-wrap">{evidence.map((e: any) => <a key={e.id} href={`/preuve/${e.id}`} target="_blank" rel="noreferrer"><img src={`/preuve/${e.id}`} alt="Preuve" className="size-20 rounded-xl object-cover hover:scale-105 transition-transform" /></a>)}</div>}
+      {evidence.length > 0 && <div className="flex gap-2 flex-wrap">{evidence.map((e: any) => <a key={e.id} href={`/preuve/${e.id}`} target="_blank" rel="noreferrer"><img src={`/preuve/${e.id}`} alt="Preuve" className="size-20 rounded-xl object-cover hover:scale-105 transition-transform" loading="lazy" decoding="async" /></a>)}</div>}
     </div>
   );
 }
@@ -57,7 +57,7 @@ export default function Report() {
               <p className="font-semibold flex items-center gap-2"><FileText className="size-4" />{r.target_type === 'listing' ? 'Annonce' : 'Commande'} Concernée</p>
               {r.target_type === 'listing' ? (
                 <><Link prefetch="intent" to={`/a/${d.target.id}`} className="text-indigo underline">{d.target.title}</Link> · {fcfa(d.target.price_fcfa)}<p className="text-muted mt-1 line-clamp-3">{d.target.description}</p>
-                  {d.target.photos && <div className="flex gap-2 mt-2">{d.target.photos.slice(0, 4).map((p: string) => <img key={p} src={p} alt="" className="size-16 rounded-lg object-cover" />)}</div>}</>
+                  {d.target.photos && <div className="flex gap-2 mt-2">{d.target.photos.slice(0, 4).map((p: string) => <img key={p} src={p} alt="" className="size-16 rounded-lg object-cover" loading="lazy" decoding="async" />)}</div>}</>
               ) : (
                 <p>{d.target.ref} · {d.target.title_snapshot} · {fcfa(d.target.total_fcfa)} · {PAY[d.target.pay_method]}{d.target.conversation_id && <span className="text-muted"> · fil SM-Chat joint au dossier</span>}</p>
               )}

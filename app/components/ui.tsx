@@ -32,7 +32,7 @@ export function AdBanner({ ads }: { ads: any[] }) {
   const a = ads[0];
   return (
     <a href={`/pub/${a.id}`} className="relative block overflow-hidden rounded-2xl lift" data-reveal="zoom">
-      <img src={a.image_url} alt="" className="h-28 md:h-36 w-full object-cover" loading="lazy" />
+      <img src={a.image_url} alt="" className="h-28 md:h-36 w-full object-cover" loading="lazy" decoding="async" />
       <span className="absolute inset-0 bg-gradient-to-r from-indigo/85 to-transparent" />
       <span className="absolute left-5 top-1/2 -translate-y-1/2 text-white max-w-[70%]">
         <span className="chip bg-white/20 text-white text-[10px]">Publicité</span>

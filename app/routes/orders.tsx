@@ -43,7 +43,7 @@ export default function Orders() {
             const st = ORDER_STATUS[o.status];
             return (
               <Link prefetch="intent" key={o.id} to={`/commandes/${o.id}`} viewTransition className="card p-4 flex gap-4 items-center lift" {...stagger(i, 50)}>
-                <img src={img(o.photo)} alt="" className="size-16 md:size-[72px] rounded-xl object-cover shrink-0" />
+                <img src={img(o.photo)} alt="" className="size-16 md:size-[72px] rounded-xl object-cover shrink-0" loading="lazy" decoding="async" />
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2"><p className="font-semibold truncate">{o.title_snapshot}</p><span className={`chip ${st.cls}`}>{st.label}</span></div>
                   <p className="text-xs text-muted mt-0.5">Commande {o.ref}, {role === 'buyer' ? o.shop_name : o.buyer_name} · {dateFr(o.created_at)}</p>
