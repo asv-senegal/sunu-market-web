@@ -77,7 +77,7 @@ export function PageTitle({ title, sub, children }: { title: string; sub?: strin
   return (
     <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
       <div>
-        <h1 className="font-display text-2xl md:text-3xl font-bold text-indigo animate-fade-up">{title}</h1>
+        <h1 className="font-display text-2xl md:text-[28px] font-semibold text-ink animate-fade-up">{title}</h1>
         {sub && <p className="text-sm text-muted mt-1">{sub}</p>}
       </div>
       {children}
@@ -87,4 +87,36 @@ export function PageTitle({ title, sub, children }: { title: string; sub?: strin
 
 export function Chip({ cls, children }: { cls: string; children: React.ReactNode }) {
   return <span className={`chip ${cls}`}>{children}</span>;
+}
+
+// Bascule segmentée (maquette « .seg ») : liens ou boutons, un seul actif
+export function Seg({ items, className = '' }: { items: { label: React.ReactNode; to?: string; on: boolean; onClick?: () => void }[]; className?: string }) {
+  return (
+    <div className={`inline-flex bg-sable-2 rounded-xl p-1 gap-0.5 ${className}`}>
+      {items.map((it, i) => {
+        const cls = `h-[34px] px-3.5 rounded-[9px] flex items-center justify-center gap-1.5 text-[13px] whitespace-nowrap transition-all ${it.on ? 'bg-white text-ink font-semibold shadow-sm' : 'text-ink-2 font-medium hover:text-ink'}`;
+        return it.to ? <Link key={i} prefetch="intent" to={it.to} className={cls} aria-current={it.on ? 'page' : undefined}>{it.label}</Link>
+          : <button key={i} type="button" onClick={it.onClick} className={cls} aria-pressed={it.on}>{it.label}</button>;
+      })}
+    </div>
+  );
+}
+
+// Filtres en pastilles (maquette : « Toutes », « En Cours »…)
+export function TabChips({ items }: { items: { label: React.ReactNode; to: string; on: boolean }[] }) {
+  return (
+    <div className="flex gap-2 overflow-x-auto no-scrollbar">
+      {items.map((it, i) => <Link key={i} prefetch="intent" to={it.to} className={`tabchip ${it.on ? '!bg-indigo !text-white !border-indigo font-semibold' : ''}`} aria-current={it.on ? 'page' : undefined}>{it.label}</Link>)}
+    </div>
+  );
+}
+
+// Ligne d'outils sous la barre haute des espaces Ma Boutique et Administrateur (le titre est dans la barre haute)
+export function Toolbar({ sub, children }: { sub?: React.ReactNode; children?: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+      {sub ? <p className="text-[13px] text-muted max-w-3xl">{sub}</p> : <span />}
+      {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
+    </div>
+  );
 }

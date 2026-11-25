@@ -3,8 +3,9 @@ import { Link, useLoaderData } from 'react-router';
 import { Clock, Sparkles } from 'lucide-react';
 import { apiOrThrow } from '~/lib/api.server';
 import { REPORT_REASON, dateFr } from '~/lib/format';
-import { Empty, PageTitle } from '~/components/ui';
+import { Empty, Toolbar } from '~/components/ui';
 
+export const handle = { title: 'Signalements' };
 export async function loader({ request }: any) {
   const st = new URL(request.url).searchParams.get('statut') || 'open';
   return { ...(await apiOrThrow(request, `/admin/reports?status=${st}`)), st };
@@ -15,9 +16,9 @@ export default function Reports() {
   const { items, st } = useLoaderData<typeof loader>();
   return (
     <>
-      <PageTitle title="Signalements" sub="Paiement direct : aucun fonds détenu. Les décisions portent sur l’annonce ou le compte.">
+      <Toolbar sub="Paiement direct : aucun fonds détenu. Les décisions portent sur l’annonce ou le compte.">
         <div className="flex gap-1">{[['open', 'Ouverts'], ['closed', 'Traités']].map(([k, l]) => <Link prefetch="intent" key={k} to={`?statut=${k}`} className={`btn btn-sm ${st === k ? 'bg-indigo text-white' : 'btn-ghost'}`}>{l}</Link>)}</div>
-      </PageTitle>
+      </Toolbar>
       {items.length ? (
         <div className="space-y-3">
           {items.map((r: any, i: number) => {

@@ -1,9 +1,8 @@
-// P13 : Mes Commandes, onglets Mes Achats et Mes Ventes
+// P13 : Mes Commandes, bascule Mes Achats et Mes Ventes, filtres, suivi
 import { Link, useLoaderData, useSearchParams } from 'react-router';
-import { ChevronRight } from 'lucide-react';
 import { apiOrThrow, requireMe } from '~/lib/api.server';
-import { fcfa, img, ORDER_STATUS, PAY, dateFr } from '~/lib/format';
-import { Empty } from '~/components/ui';
+import { fcfa, img, ORDER_STATUS, PAY, dateFr, timeFr } from '~/lib/format';
+import { Empty, Seg, TabChips } from '~/components/ui';
 import { stagger } from '~/components/motion';
 
 export const meta = () => [{ title: 'Mes Commandes | Sunu-Market' }];
@@ -15,8 +14,18 @@ export async function loader({ request }: any) {
 }
 const FILTERS: [string, string, (o: any) => boolean][] = [
   ['toutes', 'Toutes', () => true], ['en-cours', 'En Cours', (o) => ['new', 'accepted', 'scheduled'].includes(o.status)],
-  ['terminees', 'Terminées', (o) => ['completed', 'declined', 'cancelled'].includes(o.status)],
+  ['terminees', 'Terminées', (o) => ['completed', 'declined', 'cancelled'].includes(o.status)], ['signalees', 'Signalées', (o) => o.reported],
 ];
+
+// Ligne de contexte sous la commande : rendez-vous, avis, signalement
+function context(o: any) {
+  if (o.reported) return 'Signalement en cours d’examen par l’équipe';
+  if (o.status === 'scheduled' && o.meeting_place) return `Rendez-vous ${o.meeting_at ? `le ${dateFr(o.meeting_at)} à ${timeFr(o.meeting_at)}, ` : ''}${o.meeting_place}, paiement ${PAY[o.pay_method]?.toLowerCase()}`;
+  if (o.status === 'accepted') return 'Rendez-vous à fixer dans SM-Chat';
+  if (o.status === 'completed') return `Reçue le ${dateFr(o.updated_at)}${o.reviewed ? ', avis donné' : ''}`;
+  if (o.status === 'new') return `En attente de réponse, paiement prévu : ${PAY[o.pay_method]}`;
+  return `${ORDER_STATUS[o.status].label} le ${dateFr(o.updated_at)}`;
+}
 
 export default function Orders() {
   const { role, buy, sell, hasShop } = useLoaderData<typeof loader>();
@@ -25,39 +34,36 @@ export default function Orders() {
   const items = (role === 'seller' ? sell : buy).filter(f[2]);
   const q = (o: Record<string, string>) => { const n = new URLSearchParams(sp); Object.entries(o).forEach(([k, v]) => n.set(k, v)); return `?${n}`; };
   return (
-    <div className="container-x py-6 max-w-4xl">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-        <h1 className="font-display text-2xl md:text-3xl font-bold text-indigo animate-fade-up">Mes Commandes</h1>
-        <div className="grid grid-cols-2 p-1 rounded-xl bg-white border border-sable-dark text-sm font-semibold">
-          <Link prefetch="intent" to={q({ vue: 'achats' })} className={`px-4 py-2 rounded-lg transition-colors ${role === 'buyer' ? 'bg-indigo text-white' : 'text-muted'}`}>Mes Achats ({buy.length})</Link>
-          {hasShop ? <Link prefetch="intent" to={q({ vue: 'ventes' })} className={`px-4 py-2 rounded-lg transition-colors ${role === 'seller' ? 'bg-indigo text-white' : 'text-muted'}`}>Mes Ventes ({sell.length})</Link>
-            : <Link prefetch="intent" to="/ma-boutique" className="px-4 py-2 rounded-lg text-muted">Mes Ventes</Link>}
-        </div>
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-display text-2xl md:text-[28px] font-semibold text-ink animate-fade-up">Mes Commandes</h1>
+        <Seg items={[
+          { label: `Mes Achats (${buy.length})`, to: q({ vue: 'achats' }), on: role === 'buyer' },
+          { label: hasShop ? `Mes Ventes (${sell.length})` : 'Mes Ventes', to: hasShop ? q({ vue: 'ventes' }) : '/ma-boutique', on: role === 'seller' },
+        ]} />
       </div>
-      <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
-        {FILTERS.map(([k, l]) => <Link prefetch="intent" key={k} to={q({ filtre: k })} className={`chip whitespace-nowrap py-1.5 px-3 ${f[0] === k ? 'bg-orange text-white' : 'bg-white border border-sable-dark'}`}>{l}</Link>)}
-      </div>
+      <TabChips items={FILTERS.map(([k, l]) => ({ label: l, to: q({ filtre: k }), on: f[0] === k }))} />
       {items.length ? (
         <div className="space-y-3">
           {items.map((o: any, i: number) => {
-            const st = ORDER_STATUS[o.status];
+            const st = o.reported ? { label: 'Signalée', cls: 'bg-red-50 text-red-700' } : ORDER_STATUS[o.status];
             return (
-              <Link prefetch="intent" key={o.id} to={`/commandes/${o.id}`} viewTransition className="card p-4 flex gap-4 items-center lift" {...stagger(i, 50)}>
-                <img src={img(o.photo)} alt="" className="size-16 md:size-[72px] rounded-xl object-cover shrink-0" />
+              <div key={o.id} className="card p-4 flex gap-4 items-center" {...stagger(i, 50)}>
+                <img src={img(o.photo)} alt="" className="size-16 rounded-[14px] object-cover shrink-0 bg-sable-2" />
                 <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2"><p className="font-semibold truncate">{o.title_snapshot}</p><span className={`chip ${st.cls}`}>{st.label}</span></div>
-                  <p className="text-xs text-muted mt-0.5">Commande {o.ref}, {role === 'buyer' ? o.shop_name : o.buyer_name} · {dateFr(o.created_at)}</p>
-                  <p className="text-xs text-muted">{o.meeting_place ? `Rendez-vous : ${o.meeting_place}` : `Paiement direct : ${PAY[o.pay_method]}`}</p>
+                  <div className="flex flex-wrap items-center gap-2"><p className="font-semibold text-[15px] text-ink truncate">{o.title_snapshot}</p><span className={`chip ${st.cls}`}>{st.label}</span></div>
+                  <p className="text-[12.5px] text-muted mt-0.5">Commande {o.ref}, {role === 'buyer' ? o.shop_name : o.buyer_name}</p>
+                  <p className="text-[13px] text-ink-2 mt-1.5">{context(o)}</p>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="font-display font-bold text-indigo">{fcfa(o.total_fcfa)}</p>
-                  <span className="text-xs text-orange font-semibold inline-flex items-center">Voir Le Suivi<ChevronRight className="size-3.5" /></span>
+                <div className="text-right shrink-0 flex flex-col items-end gap-2">
+                  <p className="font-display font-semibold text-ink">{fcfa(o.total_fcfa)}</p>
+                  <Link prefetch="intent" to={`/commandes/${o.id}`} viewTransition className="btn btn-sm bg-indigo-50 text-indigo hover:bg-indigo-100">Voir Le Suivi</Link>
                 </div>
-              </Link>
+              </div>
             );
           })}
         </div>
-      ) : <Empty title="Aucune Commande" text="Vos commandes apparaîtront ici." action={<Link prefetch="intent" to="/recherche" className="btn-primary">Parcourir Les Articles</Link>} />}
-    </div>
+      ) : <Empty title="Aucune Commande" text={f[0] === 'toutes' ? 'Vos commandes apparaîtront ici.' : 'Aucune commande dans ce filtre.'} action={<Link prefetch="intent" to="/recherche" className="btn-primary">Parcourir Les Articles</Link>} />}
+    </>
   );
 }

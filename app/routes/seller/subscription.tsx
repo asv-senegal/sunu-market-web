@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { CheckCircle2, Info, Gift, BadgeCheck } from 'lucide-react';
 import { api, apiOrThrow, formError } from '~/lib/api.server';
 import { fcfa, dateFr, PAY } from '~/lib/format';
-import { Alert, Field, PageTitle } from '~/components/ui';
+import { Alert, Field } from '~/components/ui';
 import { Ring } from '~/components/motion';
 
+export const handle = { title: 'Abonnement' };
 export const meta = () => [{ title: 'Abonnement | Sunu-Market' }];
 export const loader = ({ request }: any) => apiOrThrow(request, '/me/subscription');
 export async function action({ request }: any) {
@@ -33,16 +34,15 @@ export default function Subscription() {
   const live = d.live[method];
   return (
     <>
-      <PageTitle title="Abonnement" sub="Acheter est gratuit. L’abonnement concerne uniquement votre boutique." />
       <div className="grid lg:grid-cols-[1.1fr_1fr] gap-6">
         <div className="card p-6 bg-indigo text-white border-indigo relative overflow-hidden animate-fade-up">
           <div className="absolute -right-10 -bottom-10 size-48 rounded-full bg-orange/25 blur-2xl floaty" aria-hidden="true" />
-          <div className="flex items-start gap-5">
+          <div className="flex flex-col sm:flex-row items-start gap-5">
             <Ring value={left} max={total} color="var(--color-orange)"><span className="font-display text-2xl font-bold">{left}</span><span className="text-[10px] text-white/70">jours</span></Ring>
-            <div>
+            <div className="min-w-0">
               {cur?.kind === 'trial' && <span className="chip bg-white/15 text-white"><Gift className="size-3" />Essai : {left} jours restants</span>}
               <p className="text-white/70 text-sm mt-2">Abonnement Annuel Commerçant</p>
-              <p className="font-display text-4xl font-bold">{fcfa(d.price)}<span className="text-base font-normal text-white/70"> / an</span></p>
+              <p className="font-display text-3xl sm:text-4xl font-bold">{fcfa(d.price)}<span className="text-base font-normal text-white/70"> / an</span></p>
               <p className="text-sm text-white/70">Soit environ {fcfa(Math.round(d.price / 12))} par mois. Aucune commission sur vos ventes.</p>
             </div>
           </div>
@@ -52,7 +52,7 @@ export default function Subscription() {
           <p className="mt-5 text-sm relative">{cur ? <>Statut : <b>{KIND[cur.kind]}</b> jusqu’au <b>{dateFr(cur.ends_at)}</b>.</> : <b>Abonnement expiré : vos annonces sont masquées.</b>}</p>
         </div>
         <div className="card p-6 animate-fade-up" style={{ animationDelay: '100ms' }}>
-          <h2 className="font-display font-semibold text-indigo">Activer L’Abonnement</h2>
+          <h2 className="font-display font-semibold text-ink">Activer L’Abonnement</h2>
           {a?.error && <div className="mt-3"><Alert>{a.error}</Alert></div>}
           {pending ? <div className="mt-4"><Alert tone="info">Un paiement est en cours de vérification par l’équipe.</Alert></div> : (
             <Form method="post" className="mt-4 space-y-4">
@@ -89,7 +89,7 @@ export default function Subscription() {
           </div>
         </div>
       </div>
-      <h2 className="font-display font-semibold text-indigo mt-8 mb-3">Historique</h2>
+      <h2 className="font-display font-semibold text-ink mt-8 mb-3">Historique</h2>
       <div className="card overflow-x-auto" data-reveal="">
         <table className="w-full text-sm">
           <thead className="text-left text-xs text-muted"><tr><th className="p-3">Type</th><th className="p-3">Montant</th><th className="p-3">Période</th><th className="p-3">Statut</th></tr></thead>

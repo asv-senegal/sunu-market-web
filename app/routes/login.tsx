@@ -1,11 +1,11 @@
 // P07 : connexion par mot de passe ou par code SMS
 import { Form, Link, useActionData, useNavigation, useSearchParams, redirect } from 'react-router';
 import { useState } from 'react';
-import { KeyRound, MessageSquareText } from 'lucide-react';
+import { KeyRound, Phone } from 'lucide-react';
 import { api, formError, getMe } from '~/lib/api.server';
 import { login } from '~/lib/session.server';
-import { Alert, Field } from '~/components/ui';
-import { AuthFrame } from './_auth';
+import { Alert } from '~/components/ui';
+import { AuthFrame, OtpInput, PasswordField, PhoneField } from './_auth';
 
 export const meta = () => [{ title: 'Se Connecter | Sunu-Market' }];
 export async function loader({ request }: any) { return (await getMe(request)) ? redirect('/') : null; }
@@ -31,41 +31,42 @@ export default function Login() {
   const [sp] = useSearchParams();
   const busy = useNavigation().state === 'submitting';
   const [mode, setMode] = useState<'password' | 'sms'>(a?.sent ? 'sms' : 'password');
+  const suite = <input type="hidden" name="suite" value={sp.get('suite') || '/'} />;
   return (
-    <AuthFrame title="Se Connecter" sub="Heureux de vous revoir sur Sunu-Market.">
-      <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-sable mb-5" role="tablist">
-        {[['password', 'Mot De Passe', KeyRound], ['sms', 'Code SMS', MessageSquareText]].map(([k, l, Icon]: any) => (
-          <button key={k} role="tab" aria-selected={mode === k} onClick={() => setMode(k)} className={`h-10 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${mode === k ? 'bg-white text-indigo shadow-sm' : 'text-muted'}`}>
-            <Icon className="size-4" />{l}
-          </button>
-        ))}
-      </div>
+    <AuthFrame title="Bon Retour Parmi Nous" sub={mode === 'password' ? 'Connectez-vous avec votre numéro de téléphone.' : 'Recevez un code à 6 chiffres par SMS.'}
+      image="man_phone_park" caption="Retrouvez vos boutiques préférées et vos commandes.">
       {a?.error && <div className="mb-4"><Alert>{a.error}</Alert></div>}
+      {sp.get('reinitialise') && <div className="mb-4"><Alert tone="success">Mot de passe modifié. Vous êtes connecté.</Alert></div>}
       {mode === 'password' ? (
         <Form method="post" className="space-y-4 animate-fade-up" key="pw">
-          <input type="hidden" name="intent" value="password" /><input type="hidden" name="suite" value={sp.get('suite') || '/'} />
-          <Field label="Numéro De Téléphone" name="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="77 123 45 67" required />
-          <Field label="Mot De Passe" name="password" type="password" autoComplete="current-password" required />
-          <button className="btn-primary w-full press" disabled={busy}>{busy ? 'Connexion…' : 'Se Connecter'}</button>
+          <input type="hidden" name="intent" value="password" />{suite}
+          <PhoneField name="phone" required defaultValue={a?.phone || ''} />
+          <PasswordField name="password" autoComplete="current-password" required />
+          <div className="flex items-center justify-between text-[13px]">
+            <label className="flex items-center gap-2 text-ink-2"><input type="checkbox" name="remember" defaultChecked className="size-4 accent-indigo" />Rester connecté sur cet appareil</label>
+            <Link prefetch="intent" to="/mot-de-passe-oublie" className="text-orange font-semibold hover:underline">Mot De Passe Oublié</Link>
+          </div>
+          <button className="btn-primary w-full h-12 press shadow-[0_8px_20px_-10px_rgb(201_67_16/.8)]" disabled={busy}>{busy ? 'Connexion…' : 'Se Connecter'}</button>
+          <button type="button" onClick={() => setMode('sms')} className="btn-ghost w-full h-12 text-ink"><Phone className="size-4" />Recevoir Un Code Par SMS</button>
         </Form>
       ) : (
         <div className="space-y-4 animate-fade-up" key="sms">
-          <Form method="post" className="flex gap-2 items-end">
+          <Form method="post" className="space-y-3">
             <input type="hidden" name="intent" value="otp-send" />
-            <div className="flex-1"><Field label="Numéro De Téléphone" name="phone" type="tel" inputMode="tel" placeholder="77 123 45 67" defaultValue={a?.phone || ''} required /></div>
-            <button className="btn-ghost" disabled={busy}>{a?.sent ? 'Renvoyer' : 'Recevoir Le Code'}</button>
+            <PhoneField name="phone" required defaultValue={a?.phone || ''} />
+            <button className="btn-ghost w-full h-12" disabled={busy}>{a?.sent ? 'Renvoyer Le Code' : 'Recevoir Le Code'}</button>
           </Form>
           {a?.sent && (
             <Form method="post" className="space-y-4 animate-fade-up">
-              <input type="hidden" name="intent" value="otp-login" /><input type="hidden" name="phone" value={a.phone} /><input type="hidden" name="suite" value={sp.get('suite') || '/'} />
-              <Field label="Code Reçu Par SMS" name="code" inputMode="numeric" autoComplete="one-time-code" pattern="\d{6}" maxLength={6} placeholder="6 chiffres" required
-                hint={a.devCode ? `Mode développement : code ${a.devCode}` : 'Valable 10 minutes.'} />
-              <button className="btn-primary w-full press" disabled={busy}>Se Connecter</button>
+              <input type="hidden" name="intent" value="otp-login" /><input type="hidden" name="phone" value={a.phone} />{suite}
+              <OtpInput hint={a.devCode ? `Mode développement : code ${a.devCode}` : 'Valable 10 minutes.'} />
+              <button className="btn-primary w-full h-12 press" disabled={busy}>Se Connecter</button>
             </Form>
           )}
+          <button type="button" onClick={() => setMode('password')} className="text-[13px] text-indigo font-semibold w-full flex items-center justify-center gap-1.5"><KeyRound className="size-4" />Utiliser mon mot de passe</button>
         </div>
       )}
-      <p className="text-sm text-center text-muted mt-5">Pas encore membre ? <Link prefetch="intent" to="/inscription" className="text-orange font-semibold">S’inscrire</Link></p>
+      <p className="text-[13px] text-center text-ink-2 mt-6">Pas encore de compte ? <Link prefetch="intent" to="/inscription" className="text-orange font-semibold">Créer Un Compte</Link></p>
     </AuthFrame>
   );
 }

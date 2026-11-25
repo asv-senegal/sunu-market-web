@@ -3,9 +3,10 @@ import { Form, Link, useActionData, useLoaderData, useSearchParams } from 'react
 import { CreditCard, Megaphone, Rocket, TrendingUp, Coins, Download, Lock, Check, X } from 'lucide-react';
 import { api, apiOrThrow } from '~/lib/api.server';
 import { fcfa, PAY, dateFr } from '~/lib/format';
-import { Alert, PageTitle } from '~/components/ui';
+import { Alert, Toolbar } from '~/components/ui';
 import { CountUp, stagger } from '~/components/motion';
 
+export const handle = { title: 'Revenus De La Plateforme' };
 export async function loader({ request }: any) {
   const u = new URL(request.url);
   const q = new URLSearchParams();
@@ -31,9 +32,9 @@ export default function Revenue() {
   const set = (k: string, v: string) => { const n = new URLSearchParams(sp); v ? n.set(k, v) : n.delete(k); return `?${n}`; };
   return (
     <>
-      <PageTitle title="Revenus De La Plateforme" sub="Mois en cours. Pour les recharges SM-IA, seule la commission est un revenu.">
+      <Toolbar sub="Mois en cours. Pour les recharges SM-IA, seule la commission est un revenu.">
         <a href="/exports/revenus.csv" className="btn-ghost btn-sm"><Download className="size-3.5" />Exporter En CSV</a>
-      </PageTitle>
+      </Toolbar>
       {a?.ok && <div className="mb-4"><Alert tone="success">{a.ok}</Alert></div>}
       {a?.error && <div className="mb-4"><Alert>{a.error}</Alert></div>}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">

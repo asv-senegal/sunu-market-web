@@ -4,9 +4,10 @@ import { useEffect, useRef } from 'react';
 import { Sparkles, Coins, Check, X, Power, Send, FileText, Bot, AlertTriangle, Download } from 'lucide-react';
 import { api, apiOrThrow, formError } from '~/lib/api.server';
 import { ago } from '~/lib/format';
-import { Alert, PageTitle } from '~/components/ui';
+import { Alert } from '~/components/ui';
 import { CountUp, Ring } from '~/components/motion';
 
+export const handle = { title: 'Assistant SM-IA' };
 export const meta = () => [{ title: 'Assistant SM-IA | Sunu-Market' }];
 export const loader = ({ request }: any) => apiOrThrow(request, '/me/smia');
 export async function action({ request }: any) {
@@ -40,7 +41,6 @@ export default function Smia() {
   const off = !st.enabled || !d.global.enabled;
   return (
     <>
-      <PageTitle title="Assistant SM-IA" sub="Votre conseiller personnel. Rien n’est payé ni publié sans votre accord explicite." />
       {!d.global.configured && <div className="mb-4"><Alert tone="info">SM-IA n’est pas encore configuré sur ce serveur (clé de l’API Anthropic à renseigner par l’administration).</Alert></div>}
       {!d.global.enabled && <div className="mb-4"><Alert>SM-IA est temporairement coupé par l’administration.</Alert></div>}
       {a?.error && <div className="mb-4"><Alert>{a.error}</Alert></div>}
@@ -73,7 +73,7 @@ export default function Smia() {
           ))}
 
           <div className="card p-5">
-            <h2 className="font-display font-semibold text-indigo flex items-center gap-2"><Bot className="size-5 text-turquoise" />Demander À SM-IA</h2>
+            <h2 className="font-display font-semibold text-ink flex items-center gap-2"><Bot className="size-5 text-turquoise" />Demander À SM-IA</h2>
             <div className="mt-3 max-h-80 overflow-y-auto space-y-2 pr-1">
               {d.chat.length === 0 && <p className="text-sm text-muted">Exemples : « Comment mieux vendre mon beurre de karité ? », « Quelles annonces améliorer avant la Tabaski ? »</p>}
               {d.chat.map((m: any, i: number) => (
@@ -97,14 +97,14 @@ export default function Smia() {
 
         <div className="space-y-5">
           <Form method="post" className="card p-5 space-y-4" data-reveal="right">
-            <h2 className="font-display font-semibold text-indigo">Niveau D’Autonomie</h2>
+            <h2 className="font-display font-semibold text-ink">Niveau D’Autonomie</h2>
             {LEVELS.map(([n, t, s]) => (
               <label key={n} className="flex gap-3 rounded-2xl border-2 border-sable-dark p-3 cursor-pointer has-[:checked]:border-indigo has-[:checked]:bg-indigo-50 transition">
                 <input type="radio" name="autonomy" value={n} defaultChecked={st.autonomy === n} className="accent-indigo mt-1" />
                 <span><span className="font-semibold text-sm">{t}</span> <span className="chip bg-sable-dark text-[10px] ml-1">Niveau {n}</span><span className="block text-xs text-muted">{s}</span></span>
               </label>
             ))}
-            <h3 className="font-display font-semibold text-indigo pt-2">Limites Et Contrôle</h3>
+            <h3 className="font-display font-semibold text-ink pt-2">Limites Et Contrôle</h3>
             <div className="grid grid-cols-2 gap-3">
               <label><span className="label">Crédits Maximum Par Jour</span><input name="daily_credit_cap" type="number" min={0} defaultValue={st.daily_credit_cap} className="input" /></label>
               <label><span className="label">Arrêt Sous (Crédits)</span><input name="min_balance_stop" type="number" min={0} defaultValue={st.min_balance_stop} className="input" /></label>
@@ -120,7 +120,7 @@ export default function Smia() {
           </div>
 
           <div className="card p-5" data-reveal="right">
-            <div className="flex items-center justify-between mb-3"><h2 className="font-display font-semibold text-indigo flex items-center gap-2"><FileText className="size-4" />Journal Des Actions</h2><a href="/exports/journal-sm-ia.csv" className="btn-ghost btn-sm"><Download className="size-3.5" />Exporter</a></div>
+            <div className="flex items-center justify-between mb-3"><h2 className="font-display font-semibold text-ink flex items-center gap-2"><FileText className="size-4" />Journal Des Actions</h2><a href="/exports/journal-sm-ia.csv" className="btn-ghost btn-sm"><Download className="size-3.5" />Exporter</a></div>
             {d.journal.length ? (
               <ul className="divide-y divide-sable-dark text-sm">
                 {d.journal.slice(0, 12).map((j: any) => (

@@ -7,6 +7,7 @@ import { REPORT_REASON, fcfa, dateFr, timeFr, PAY } from '~/lib/format';
 import { Alert } from '~/components/ui';
 import { Select } from '~/components/Select';
 
+export const handle = { title: (d: any) => `Signalement ${d?.report?.ref || ''}` };
 export const loader = ({ request, params }: any) => apiOrThrow(request, `/admin/reports/${params.id}`);
 export async function action({ request, params }: any) {
   const f = await request.formData();
@@ -14,9 +15,9 @@ export async function action({ request, params }: any) {
   const r = await api(request, `/admin/reports/${params.id}/decision`, { json: { decision: f.get('decision'), note: f.get('note') } });
   return r.ok ? redirect('/admin/signalements') : formError(r);
 }
-const DEC = [['dismiss', 'Classer', 'Signalement non fondé'], ['warn', 'Avertir', 'Et demander une solution amiable'], ['remove', 'Retirer L’Annonce', 'Annonce non conforme'], ['suspend', 'Suspendre Le Compte', 'Récidive ou fraude']];
+const DEC = [['dismiss', 'Classer', 'Signalement non fondé'], ['warn', 'Avertir Le Commerçant', 'Et demander une solution amiable'], ['remove', 'Retirer L’Annonce', 'Annonce non conforme'], ['suspend', 'Suspendre Le Compte', 'Récidive ou fraude']];
 
-function Party({ title, p, messages, party, evidence }: any) {
+function Party({ title, p, messages, party, evidence, lead }: any) {
   return (
     <div className="card p-5 space-y-3 animate-fade-up">
       <div className="flex items-center gap-3">
@@ -24,6 +25,7 @@ function Party({ title, p, messages, party, evidence }: any) {
         <div><p className="font-semibold text-sm">{title} : {p?.name || 'SM-IA (signalement automatique)'}</p>
           {p && <p className="text-xs text-muted">{p.verification_status === 'verified' ? 'Compte vérifié' : 'Non vérifié'}, {p.purchases} achats, {p.sales} ventes{p.rating ? `, ${p.rating} sur 5` : ''}, {p.reports_against} signalement(s) reçu(s)</p>}</div>
       </div>
+      {lead}
       {messages.filter((m: any) => m.party === party).map((m: any, i: number) => <p key={i} className="text-sm rounded-xl bg-sable p-3">« {m.body} » <span className="text-xs text-muted block">{dateFr(m.created_at)} {timeFr(m.created_at)}</span></p>)}
       {evidence.length > 0 && <div className="flex gap-2 flex-wrap">{evidence.map((e: any) => <a key={e.id} href={`/preuve/${e.id}`} target="_blank" rel="noreferrer"><img src={`/preuve/${e.id}`} alt="Preuve" className="size-20 rounded-xl object-cover hover:scale-105 transition-transform" /></a>)}</div>}
     </div>
@@ -35,69 +37,65 @@ export default function Report() {
   const a = useActionData<typeof action>() as any;
   const busy = useNavigation().state === 'submitting';
   const [dec, setDec] = useState('warn');
+  const [ask, setAsk] = useState(false);
   const r = d.report;
   const h = Math.round((new Date(r.due_at).getTime() - Date.now()) / 36e5);
   return (
     <>
-      <Link prefetch="intent" to="/admin/signalements" className="inline-flex items-center gap-2 text-sm text-muted hover:text-indigo mb-3"><ArrowLeft className="size-4" />Signalements</Link>
       <div className="flex flex-wrap items-center gap-2 mb-5 animate-fade-up">
-        <h1 className="font-display text-2xl font-bold text-indigo mr-2">Signalement {r.ref}</h1>
+        <Link prefetch="intent" to="/admin/signalements" className="size-8 rounded-full bg-white border border-line flex items-center justify-center hover:bg-sable mr-1" aria-label="Retour aux signalements"><ArrowLeft className="size-4" /></Link>
         {r.status === 'open' && <span className="chip bg-red-50 text-red-700"><Clock className="size-3" />{h > 0 ? `Délai : ${h} h restantes` : 'Délai dépassé'}</span>}
         <span className="chip bg-indigo-50 text-indigo"><Wallet className="size-3" />Paiement direct : pas de fonds détenus</span>
+        {r.status === 'open' && <button onClick={() => setAsk(!ask)} className="btn-ghost btn-sm ml-auto" aria-expanded={ask}><MessageCircle className="size-3.5" />Demander Une Précision</button>}
       </div>
       {a?.error && <div className="mb-4"><Alert>{a.error}</Alert></div>}
       {a?.ok && <div className="mb-4"><Alert tone="success">{a.ok}</Alert></div>}
-      <div className="grid xl:grid-cols-[1.3fr_1fr] gap-6">
-        <div className="space-y-4">
-          <div className="card p-5"><p className="text-xs text-muted">{REPORT_REASON[r.reason]} · {dateFr(r.created_at)}</p><p className="mt-1">{r.details || 'Aucun détail.'}</p></div>
-          <Party title="Signalé par" p={d.reporter} messages={d.messages} party="reporter" evidence={d.evidence.filter((e: any) => e.by_reporter)} />
-          <Party title="Concerné" p={d.reported} messages={d.messages} party="reported" evidence={d.evidence.filter((e: any) => !e.by_reporter)} />
-          {d.target && (
-            <div className="card p-5 text-sm">
-              <p className="font-semibold flex items-center gap-2"><FileText className="size-4" />{r.target_type === 'listing' ? 'Annonce' : 'Commande'} Concernée</p>
-              {r.target_type === 'listing' ? (
-                <><Link prefetch="intent" to={`/a/${d.target.id}`} className="text-indigo underline">{d.target.title}</Link> · {fcfa(d.target.price_fcfa)}<p className="text-muted mt-1 line-clamp-3">{d.target.description}</p>
-                  {d.target.photos && <div className="flex gap-2 mt-2">{d.target.photos.slice(0, 4).map((p: string) => <img key={p} src={p} alt="" className="size-16 rounded-lg object-cover" />)}</div>}</>
-              ) : (
-                <p>{d.target.ref} · {d.target.title_snapshot} · {fcfa(d.target.total_fcfa)} · {PAY[d.target.pay_method]}{d.target.conversation_id && <span className="text-muted"> · fil SM-Chat joint au dossier</span>}</p>
-              )}
+      {ask && r.status === 'open' && (
+        <Form method="post" className="card p-5 mb-4 grid md:grid-cols-[220px_1fr_auto] gap-3 items-start animate-slide-down">
+          <input type="hidden" name="intent" value="ask" />
+          <Select name="to" size="sm" defaultValue="reporter" aria-label="Destinataire" options={[{ value: 'reporter', label: 'Au membre qui signale' }, ...(r.reported_user_id ? [{ value: 'reported', label: 'Au membre concerné' }] : [])]} />
+          <textarea name="body" rows={2} required minLength={3} className="input h-auto py-2" placeholder="Votre question, visible par ce membre seulement" />
+          <button className="btn-indigo btn-sm" disabled={busy}><Send className="size-3.5" />Envoyer</button>
+        </Form>
+      )}
+      <div className="grid lg:grid-cols-2 xl:grid-cols-[1fr_1fr_0.9fr] gap-4">
+        <Party title="Signalé par" p={d.reporter} messages={d.messages} party="reporter" evidence={d.evidence.filter((e: any) => e.by_reporter)}
+          lead={<p className="text-sm rounded-xl border border-line p-3">{d.report.details ? `« ${d.report.details} »` : 'Aucun détail.'}<span className="block text-[11px] text-muted mt-1">{REPORT_REASON[r.reason]} · {dateFr(r.created_at)}</span></p>} />
+        <Party title="Concerné" p={d.reported} messages={d.messages} party="reported" evidence={d.evidence.filter((e: any) => !e.by_reporter)}
+          lead={d.target && (
+            <div className="rounded-xl bg-indigo-50 text-indigo text-[12.5px] p-3 flex gap-2"><FileText className="size-4 shrink-0 mt-0.5" />
+              {r.target_type === 'listing'
+                ? <span>Annonce : <Link prefetch="intent" to={`/a/${d.target.id}`} className="underline">{d.target.title}</Link>, {fcfa(d.target.price_fcfa)}. Version archivée au moment du signalement.</span>
+                : <span>Commande {d.target.ref} : {d.target.title_snapshot}, {fcfa(d.target.total_fcfa)}, {PAY[d.target.pay_method]}{d.target.conversation_id ? '. Fil SM-Chat joint au dossier.' : '.'}</span>}
             </div>
-          )}
-        </div>
-        <div className="space-y-4">
-          <div className="card p-5">
-            <p className="font-display font-semibold text-indigo mb-3">Chronologie</p>
-            <ol className="space-y-3 text-sm">
-              {d.timeline.map((t: any, i: number) => (
-                <li key={i} className="flex gap-3" data-reveal="left" style={{ '--d': `${i * 80}ms` } as React.CSSProperties}><span className="size-6 rounded-full bg-turquoise text-white flex items-center justify-center shrink-0"><Check className="size-3.5" /></span><span>{t.body}<span className="block text-xs text-muted">{dateFr(t.created_at)} {timeFr(t.created_at)}</span></span></li>
-              ))}
-              <li className="flex gap-3"><span className="size-6 rounded-full bg-orange text-white flex items-center justify-center shrink-0"><Flag className="size-3.5" /></span><span>Signalement {r.reporter_id ? 'par le membre' : 'automatique SM-IA'}<span className="block text-xs text-muted">{dateFr(r.created_at)} {timeFr(r.created_at)}</span></span></li>
-              <li className="flex gap-3"><span className="size-6 rounded-full bg-sable-dark text-muted flex items-center justify-center shrink-0 text-xs font-bold">{d.timeline.length + 2}</span><span>Décision motivée, notifiée aux deux parties</span></li>
-            </ol>
-          </div>
-          {r.status === 'open' ? (
-            <>
-              <Form method="post" className="card p-5 space-y-3">
-                <input type="hidden" name="intent" value="ask" />
-                <p className="font-semibold text-sm flex items-center gap-2"><MessageCircle className="size-4" />Demander Une Précision</p>
-                <Select name="to" size="sm" defaultValue="reporter" aria-label="Destinataire" options={[{ value: 'reporter', label: 'Au membre qui signale' }, ...(r.reported_user_id ? [{ value: 'reported', label: 'Au membre concerné' }] : [])]} />
-                <textarea name="body" rows={2} required minLength={3} className="input h-auto py-2" placeholder="Votre question" />
-                <button className="btn-ghost btn-sm" disabled={busy}><Send className="size-3.5" />Envoyer</button>
-              </Form>
-              <Form method="post" className="card p-5 space-y-3">
-                <p className="font-display font-semibold text-indigo">Décision</p>
-                {DEC.filter(([k]) => k !== 'remove' || r.target_type === 'listing').filter(([k]) => k !== 'suspend' || r.reported_user_id).map(([k, t, s]) => (
-                  <label key={k} className="flex gap-3 rounded-xl border-2 border-sable-dark p-3 cursor-pointer has-[:checked]:border-indigo has-[:checked]:bg-indigo-50 transition">
-                    <input type="radio" name="decision" value={k} checked={dec === k} onChange={() => setDec(k)} className="accent-indigo mt-1" /><span><b className="text-sm">{t}</b><span className="block text-xs text-muted">{s}</span></span>
-                  </label>
-                ))}
-                <textarea name="note" rows={3} required minLength={3} className="input h-auto py-2" placeholder="Motif, envoyé aux deux parties" />
-                <button className="btn-primary w-full press" disabled={busy}><Send className="size-4" />Valider Et Notifier</button>
-              </Form>
-            </>
-          ) : <Alert tone="success">Décision : {r.decision}. {r.decision_note}</Alert>}
+          )} />
+        <div className="card p-5 lg:col-span-2 xl:col-span-1" data-reveal="">
+          <p className="font-display font-semibold text-ink mb-3">Chronologie</p>
+          <ol className="space-y-3.5 text-[13px]">
+            {d.timeline.map((t: any, i: number) => (
+              <li key={i} className="flex gap-3"><span className="size-6 rounded-full bg-turquoise text-white flex items-center justify-center shrink-0"><Check className="size-3.5" /></span><span className="font-medium">{t.body}<span className="block text-[11.5px] text-muted font-normal">{dateFr(t.created_at)} {timeFr(t.created_at)}</span></span></li>
+            ))}
+            <li className="flex gap-3"><span className="size-6 rounded-full bg-orange text-white flex items-center justify-center shrink-0 ring-4 ring-orange-50"><Flag className="size-3.5" /></span><span className="font-medium">Signalement {r.reporter_id ? 'par le membre' : 'automatique SM-IA'}<span className="block text-[11.5px] text-muted font-normal">{dateFr(r.created_at)} {timeFr(r.created_at)}</span></span></li>
+            <li className="flex gap-3"><span className="size-6 rounded-full border-2 border-line text-muted flex items-center justify-center shrink-0 text-[11px] font-bold">{d.timeline.length + 2}</span><span className="text-muted">Décision motivée<span className="block text-[11.5px]">Notifiée aux deux parties</span></span></li>
+          </ol>
         </div>
       </div>
+      {r.status === 'open' ? (
+        <Form method="post" className="card p-5 mt-4" data-reveal="">
+          <p className="font-display font-semibold text-ink mb-3">Décision</p>
+          <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            {DEC.filter(([k]) => k !== 'remove' || r.target_type === 'listing').filter(([k]) => k !== 'suspend' || r.reported_user_id).map(([k, t, sub]) => (
+              <label key={k} className={`flex gap-3 rounded-xl p-3.5 cursor-pointer transition border ${dec === k ? 'border-2 border-orange bg-orange-50/30' : 'border-line hover:border-orange/40'}`}>
+                <input type="radio" name="decision" value={k} checked={dec === k} onChange={() => setDec(k)} className="accent-orange mt-1" /><span><b className="text-sm">{t}</b><span className="block text-xs text-muted">{sub}</span></span>
+              </label>
+            ))}
+          </div>
+          <div className="flex flex-col md:flex-row gap-3 mt-4">
+            <input name="note" required minLength={3} className="input flex-1" placeholder="Motif : envoyé aux deux parties et inscrit au journal d’audit" />
+            <button className="btn-primary press whitespace-nowrap" disabled={busy}><Send className="size-4" />Valider Et Notifier</button>
+          </div>
+        </Form>
+      ) : <div className="mt-4"><Alert tone="success">Décision : {r.decision}. {r.decision_note}</Alert></div>}
     </>
   );
 }

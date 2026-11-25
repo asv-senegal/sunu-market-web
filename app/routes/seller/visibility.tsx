@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { Megaphone, Rocket, TrendingUp, Check, ImagePlus, Eye, MousePointerClick } from 'lucide-react';
 import { api, apiOrThrow, formError } from '~/lib/api.server';
 import { fcfa, img, PAY, dateFr, QUARTERS } from '~/lib/format';
-import { Alert, Field, PageTitle } from '~/components/ui';
+import { Alert, Field } from '~/components/ui';
 import type { Cat } from '~/components/Shell';
 import { Select } from '~/components/Select';
 
+export const handle = { title: 'Campagnes Et Mise En Avant' };
 export const meta = () => [{ title: 'Campagnes Et Mise En Avant | Sunu-Market' }];
 export async function loader({ request }: any) {
   const [p, l] = await Promise.all([apiOrThrow(request, '/me/promotions'), apiOrThrow(request, '/me/shop/listings')]);
@@ -49,12 +50,11 @@ export default function Visibility() {
   const live = d.live[method];
   return (
     <>
-      <PageTitle title="Campagnes Et Mise En Avant" sub="Les contenus payants sont signalés aux acheteurs par la mention « Mis En Avant » ou « Publicité »." />
       {a?.error && <div className="mb-4"><Alert>{a.error}</Alert></div>}
       <Form method="post" encType="multipart/form-data" className="grid xl:grid-cols-[1fr_340px] gap-6">
         <div className="space-y-6">
           <section>
-            <h2 className="font-display font-semibold text-indigo mb-3">1- Choisissez Le Service</h2>
+            <h2 className="font-display font-semibold text-ink mb-3">1- Choisissez Le Service</h2>
             <div className="grid md:grid-cols-3 gap-3">
               {OFFERS.map((o, i) => (
                 <label key={o.k} className={`card p-4 cursor-pointer transition-all duration-300 border-2 ${kind === o.k ? 'border-orange shadow-lg -translate-y-1' : 'border-transparent hover:-translate-y-0.5'}`} data-reveal="" style={{ '--d': `${i * 80}ms` } as React.CSSProperties}>
@@ -68,7 +68,7 @@ export default function Visibility() {
             </div>
           </section>
           <section className="card p-5 space-y-4 animate-fade-up" key={kind}>
-            <h2 className="font-display font-semibold text-indigo">2- {kind === 'ad' ? 'Bannière Et Ciblage' : 'Produit Et Emplacement'}</h2>
+            <h2 className="font-display font-semibold text-ink">2- {kind === 'ad' ? 'Bannière Et Ciblage' : 'Produit Et Emplacement'}</h2>
             {kind !== 'ad' ? (
               <div className="grid sm:grid-cols-2 gap-3">
                 <Field label="Produit"><Select name="listingId" value={listingId} onChange={setListingId} aria-label="Produit" options={d.listings.map((x: any) => ({ value: x.id, label: x.title, hint: fcfa(x.price_fcfa) }))} /></Field>
@@ -91,12 +91,13 @@ export default function Visibility() {
                 </label>
               </div>
             )}
-            <Field label={`Durée : ${days} jours`}>
-              <input type="range" name="days" min={kind === 'campaign' ? 3 : 1} max={kind === 'campaign' ? 14 : 30} value={days} onChange={(e) => setDays(Number(e.target.value))} className="w-full accent-orange" />
+            <Field label="Durée">
+              <Select name="days" value={String(days)} onChange={(v: string) => setDays(Number(v))} aria-label="Durée"
+                options={(kind === 'campaign' ? [3, 5, 7, 10, 14] : [1, 3, 5, 7, 14, 21, 30]).map((n) => ({ value: String(n), label: `${n} jour${n > 1 ? 's' : ''}` }))} />
             </Field>
           </section>
           <section className="card p-5 space-y-3">
-            <h2 className="font-display font-semibold text-indigo">3- Paiement À Sunu-Market</h2>
+            <h2 className="font-display font-semibold text-ink">3- Paiement À Sunu-Market</h2>
             <div className="grid grid-cols-2 gap-2">
               {(['wave', 'orange_money'] as const).map((p) => (
                 <label key={p} className="rounded-2xl border-2 border-sable-dark p-3 cursor-pointer has-[:checked]:border-turquoise has-[:checked]:bg-turquoise-50 transition">
@@ -130,7 +131,7 @@ export default function Visibility() {
       </Form>
       {d.items.length > 0 && (
         <>
-          <h2 className="font-display font-semibold text-indigo mt-8 mb-3">Mes Campagnes</h2>
+          <h2 className="font-display font-semibold text-ink mt-8 mb-3">Mes Campagnes</h2>
           <div className="card divide-y divide-sable-dark" data-reveal="">
             {d.items.map((p: any) => (
               <div key={p.id} className="p-4 flex flex-wrap items-center gap-3 text-sm">

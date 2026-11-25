@@ -25,7 +25,7 @@ export default function MyReport() {
   const a = useActionData<typeof action>() as any;
   const busy = useNavigation().state === 'submitting';
   return (
-    <div className="container-x py-6 max-w-2xl space-y-4">
+    <div className="max-w-3xl w-full space-y-4">
       <Link prefetch="intent" to="/signalements" className="inline-flex items-center gap-2 text-sm text-muted hover:text-indigo"><ArrowLeft className="size-4" />Mes Signalements</Link>
       <div className="card p-6 animate-fade-up">
         <p className="text-xs text-muted">{r.ref} · {dateFr(r.created_at)}</p>
