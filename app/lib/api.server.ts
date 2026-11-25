@@ -12,9 +12,18 @@ export const idemOf = (f: FormData) => {
   return typeof v === 'string' && /^[A-Za-z0-9_-]{8,100}$/.test(v) ? v : undefined;
 };
 
-// Appel à l'API Express depuis le serveur web (loaders et actions)
-export async function api<T = any>(request: Request, path: string, init: { method?: string; json?: unknown; form?: FormData; idem?: string } = {}): Promise<ApiResult<T>> {
-  const token = await getToken(request);
+// L'API ne répond pas (arrêtée, adresse API_URL erronée, DNS, certificat…) : message clair au lieu d'une page 500,
+// et la cause exacte dans le journal du serveur web.
+export const API_UNREACHABLE = 'Le service est momentanément indisponible. Réessayez dans un instant.';
+export function logApiUnreachable(url: string, err: unknown) {
+  const e = err as { message?: string; cause?: { code?: string; message?: string } };
+  console.error(`[API injoignable] ${url} : ${e?.cause?.code || e?.cause?.message || e?.message || err}`);
+}
+
+// Appel à l'API Express depuis le serveur web (loaders et actions).
+// « token » remplace le jeton de session (juste après la connexion, avant que le cookie existe).
+export async function api<T = any>(request: Request, path: string, init: { method?: string; json?: unknown; form?: FormData; idem?: string; token?: string } = {}): Promise<ApiResult<T>> {
+  const token = init.token ?? await getToken(request);
   const headers: Record<string, string> = {};
   if (token) headers.Authorization = `Bearer ${token}`;
   if (init.idem) headers['Idempotency-Key'] = init.idem;
@@ -22,9 +31,16 @@ export async function api<T = any>(request: Request, path: string, init: { metho
   if (init.json !== undefined) { headers['Content-Type'] = 'application/json'; body = JSON.stringify(init.json); }
   if (init.form) body = init.form;
   const method = init.method || (body ? 'POST' : 'GET');
+  const url = `${API_URL}/api${path}`;
   // Même demande déjà en cours (double clic) : on attend sa réponse au lieu d'afficher une erreur
   for (let attempt = 0; ; attempt++) {
-    const res = await fetch(`${API_URL}/api${path}`, { method, headers, body });
+    let res: Response;
+    try {
+      res = await fetch(url, { method, headers, body });
+    } catch (err) {
+      logApiUnreachable(url, err);
+      return { ok: false, status: 503, data: { error: API_UNREACHABLE, code: 'api_unreachable' } as T };
+    }
     const d = await res.json().catch(() => ({}));
     if (res.status === 409 && d?.code === 'request_in_progress' && init.idem && attempt < 30) {
       await new Promise((r) => setTimeout(r, 500));

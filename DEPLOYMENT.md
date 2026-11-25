@@ -165,6 +165,7 @@ Visitors who installed the app get the new version on their next visit: the app 
 | Run fails at "typecheck" or "build" | Code error | Run `npm run typecheck` and `npm run build` locally, fix, push. |
 | FTP step cannot connect | Protocol or server | Try `FTP_PROTOCOL` = `ftp`; check the server name. |
 | Health check fails after a push | New packages not installed, or no restart | Click **Run NPM Install** then **Restart** in N0C, then **Re-run jobs** in GitHub. |
+| Login or a form shows "Le service est momentanément indisponible" | The website cannot reach the API | Check `API_URL` in `.env` (the API address only, without `/api` or `/health`), then from the server run `curl -s <API_URL>/health`. The website log shows `[API injoignable] <address> : <cause>` (for example `ECONNREFUSED`, `ENOTFOUND`, a certificate error). |
 | Every page shows an error, the API log is quiet | Wrong `API_URL` | Check `.env`, and that `https://api.votredomaine.com/health` answers. |
 | Sign-in works, then you are signed out at once | Site opened over `http://` | Use `https://` and turn on HTTPS redirection in N0C. |
 | App error mentioning `node_modules` and a symlink | A real `node_modules` folder exists | Delete `~/sunumarketweb/node_modules`, then **Run NPM Install**. |

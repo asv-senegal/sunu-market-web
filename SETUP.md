@@ -202,6 +202,7 @@ The script pulls the new code, installs packages if needed, rebuilds and restart
 | `vite: not found` or `react-router: not found` during the build | Build tools not installed | Run `bash scripts/server-update.sh` (it uses `--include=dev`); check `NODE_ENV` is not set to `production` in the terminal (`unset NODE_ENV`). |
 | `Cannot find module …/build/server/index.js` | No build | Step 7. |
 | Build stops with `Killed` or "JavaScript heap out of memory" | Not enough memory on the account for the build | Retry once; otherwise use the automatic FTP deployment in `DEPLOYMENT.md`, which builds on GitHub instead. |
+| Login or a form shows "Le service est momentanément indisponible" | The website cannot reach the API | Check `API_URL` in `.env` (the API address only, without `/api` or `/health`), then from the server run `curl -s <API_URL>/health`. The website log shows `[API injoignable] <address> : <cause>` (for example `ECONNREFUSED`, `ENOTFOUND`, a certificate error). |
 | Pages show an error, the API is fine | Wrong `API_URL` | Check `.env` (step 5), then run the script again. |
 | Sign-in does not stay signed in | Site opened over `http://` | Use `https://`; turn on HTTPS redirection in N0C. |
 | Old version after an update | App not restarted | `touch ~/sunumarketweb/tmp/restart.txt`, or **Restart** in N0C. |

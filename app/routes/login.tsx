@@ -21,9 +21,22 @@ export async function action({ request }: any) {
     ? await api(request, '/auth/login-otp', { json: { phone: f.get('phone'), code: f.get('code') } })
     : await api(request, '/auth/login', { json: { phone: f.get('phone'), password: f.get('password') } });
   if (!r.ok) return { ...formError(r), sent: intent === 'otp-login', phone: f.get('phone') };
-  const suite = String(f.get('suite') || '/');
-  const to = r.data.user.verificationStatus === 'verified' ? (suite.startsWith('/') ? suite : '/') : '/verification';
-  return login(r.data.token, to);
+  return login(r.data.token, await landingPage(request, r.data.user, r.data.token, f.get('suite')));
+}
+
+// Page d'arrivée après connexion :
+// compte non vérifié → vérification ; page protégée demandée → cette page ;
+// équipe (administration, modération, finance, support) → espace administrateur ;
+// commerçant avec boutique → Ma Boutique ; sinon → accueil.
+const STAFF = ['admin', 'moderator', 'finance', 'support'];
+async function landingPage(request: Request, user: any, token: string, suiteIn: FormDataEntryValue | null) {
+  if (user?.verificationStatus !== 'verified') return '/verification';
+  const suite = typeof suiteIn === 'string' ? suiteIn : '';
+  // Uniquement un chemin du site (pas « //autre-site.com » ni « /\autre-site.com »), et pas la page de connexion elle-même
+  if (/^\/(?![/\\])/.test(suite) && !suite.startsWith('/connexion') && suite !== '/') return suite;
+  if (STAFF.includes(user.role)) return '/admin';
+  const shop = await api(request, '/me/shop', { token });
+  return shop.ok ? '/ma-boutique' : '/';
 }
 
 export default function Login() {
