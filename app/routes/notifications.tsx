@@ -1,10 +1,10 @@
 // P18 : notifications et préférences par canal
 import { Form, Link, useLoaderData, useFetcher } from 'react-router';
 import { useState } from 'react';
-import { Settings2, ShoppingBag, MessageCircle, Sparkles, ShieldCheck, Bell } from 'lucide-react';
+import { ShoppingBag, MessageCircle, Sparkles, ShieldCheck, Bell, Smartphone, Coins, Gift, Star, Flag } from 'lucide-react';
 import { api, apiOrThrow, requireMe } from '~/lib/api.server';
 import { ago } from '~/lib/format';
-import { Empty, PageTitle } from '~/components/ui';
+import { Empty } from '~/components/ui';
 import { stagger } from '~/components/motion';
 
 export const meta = () => [{ title: 'Notifications | Sunu-Market' }];
@@ -23,59 +23,74 @@ export async function action({ request }: any) {
   await api(request, '/me/notifications/read', { method: 'POST' });
   return null;
 }
-const KIND_ICON: Record<string, any> = { order: ShoppingBag, message: MessageCircle, smia: Sparkles, smia_low: Sparkles, verification: ShieldCheck };
+const KIND_ICON: Record<string, [any, string]> = {
+  order: [ShoppingBag, 'bg-orange-50 text-orange'], message: [MessageCircle, 'bg-indigo-50 text-indigo'], smia: [Sparkles, 'bg-turquoise-50 text-turquoise'],
+  smia_low: [Coins, 'bg-indigo-50 text-indigo'], verification: [ShieldCheck, 'bg-turquoise-50 text-turquoise'], trial: [Gift, 'bg-[#FDF3D7] text-[#8A5A00]'],
+  subscription: [Gift, 'bg-[#FDF3D7] text-[#8A5A00]'], review: [Star, 'bg-turquoise-50 text-turquoise'], report: [Flag, 'bg-red-50 text-red-700'],
+};
 
 export default function Notifications() {
   const { items, groups } = useLoaderData<typeof loader>();
-  const [open, setOpen] = useState(false);
   const [prefs, setPrefs] = useState<any>(() => Object.fromEntries(Object.entries(groups).map(([k, g]: any) => [k, { app: g.app, sms: g.sms, whatsapp: g.whatsapp }])));
   const f = useFetcher();
+  const unread = items.some((n: any) => !n.read_at);
   return (
-    <div className="container-x py-6 max-w-2xl">
-      <PageTitle title="Notifications">
-        <div className="flex gap-2">
-          {items.some((n: any) => !n.read_at) && <Form method="post"><button className="btn-ghost btn-sm">Tout Marquer Comme Lu</button></Form>}
-          <button onClick={() => setOpen(!open)} className="btn-ghost btn-sm" aria-expanded={open}><Settings2 className="size-4" />Préférences</button>
-        </div>
-      </PageTitle>
-      {open && (
-        <f.Form method="post" className="card p-5 mb-5 animate-slide-down">
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-display text-2xl md:text-[28px] font-semibold text-ink animate-fade-up">Notifications</h1>
+        {unread && <Form method="post"><button className="text-[13px] font-semibold text-orange hover:underline">Tout Marquer Comme Lu</button></Form>}
+      </div>
+      <div className="grid lg:grid-cols-[1fr_340px] gap-5 items-start">
+        {items.length ? (
+          <ul className="space-y-2.5">
+            {items.map((n: any, i: number) => {
+              const [Icon, tone] = KIND_ICON[n.kind] || [Bell, 'bg-sable-2 text-ink-2'];
+              const inner = (
+                <div className={`flex gap-3.5 p-4 rounded-2xl transition-colors ${n.read_at ? 'hover:bg-white/60' : 'card'}`}>
+                  <span className={`size-10 rounded-xl shrink-0 flex items-center justify-center ${tone}`}><Icon className="size-5" /></span>
+                  <div className="flex-1 min-w-0"><p className="font-semibold text-sm text-ink">{n.title}</p>{n.body && <p className="text-[13px] text-ink-2 mt-0.5">{n.body}</p>}
+                    <p className="text-[11.5px] text-muted mt-1">{ago(n.created_at)}</p></div>
+                  {!n.read_at && <span className="size-2 rounded-full bg-orange mt-1.5 shrink-0" aria-label="Non lue" />}
+                </div>
+              );
+              return <li key={n.id} {...stagger(i, 40)}>{n.link ? <Link prefetch="intent" to={n.link} className="block rounded-2xl">{inner}</Link> : inner}</li>;
+            })}
+          </ul>
+        ) : <Empty title="Aucune Notification" text="Vous serez prévenu ici des messages, commandes et décisions." />}
+        <f.Form method="post" className="card p-5 lg:sticky lg:top-24" data-reveal="">
           <input type="hidden" name="intent" value="prefs" /><input type="hidden" name="prefs" value={JSON.stringify(prefs)} />
-          <h2 className="font-display font-semibold text-indigo mb-3">Comment Être Prévenu ?</h2>
-          <table className="w-full text-sm">
-            <thead className="text-xs text-muted text-left"><tr><th className="py-2">Sujet</th><th className="text-center">Application</th><th className="text-center">SMS</th><th className="text-center">WhatsApp</th></tr></thead>
-            <tbody className="divide-y divide-sable-dark">
+          <h2 className="font-display font-semibold text-ink">Canaux</h2>
+          <p className="text-xs text-muted mt-0.5 mb-3">Choisissez comment être prévenu, sujet par sujet.</p>
+          <table className="w-full text-[13px]">
+            <thead className="text-[11px] text-muted"><tr><th className="py-1.5 text-left font-medium">Sujet</th>{CHANNELS.map(([c, l, I]) => <th key={c} className="font-medium" title={l}><I className="size-4 mx-auto" aria-label={l} /></th>)}</tr></thead>
+            <tbody className="divide-y divide-line">
               {Object.entries(groups).map(([k, g]: any) => (
-                <tr key={k}><td className="py-2.5">{g.label}</td>
-                  {['app', 'sms', 'whatsapp'].map((c) => (
+                <tr key={k}><td className="py-2.5 pr-2 text-ink-2">{g.label}</td>
+                  {CHANNELS.map(([c, l]) => (
                     <td key={c} className="text-center">
-                      <input type="checkbox" className="size-4 accent-turquoise" checked={!!prefs[k][c]} disabled={c === 'app'} aria-label={`${g.label} par ${c}`}
-                        onChange={(e) => setPrefs({ ...prefs, [k]: { ...prefs[k], [c]: e.target.checked } })} />
+                      <Toggle on={!!prefs[k][c]} disabled={c === 'app'} label={`${g.label} par ${l}`} onChange={(v) => setPrefs({ ...prefs, [k]: { ...prefs[k], [c]: v } })} />
                     </td>
                   ))}
                 </tr>
               ))}
+              <tr><td className="py-2.5 text-muted">E-mail</td><td colSpan={3} className="text-center text-[11px] text-muted">[à confirmer]</td></tr>
             </tbody>
           </table>
-          <p className="text-xs text-muted mt-3">Les notifications dans l’application restent toujours actives. Envoi WhatsApp : bientôt disponible.</p>
+          <p className="text-[11.5px] text-muted mt-3">L’application reste toujours active. Envoi WhatsApp : bientôt disponible.</p>
           <button className="btn-indigo btn-sm mt-3">{f.state !== 'idle' ? 'Enregistrement…' : (f.data as any)?.saved ? 'Enregistré' : 'Enregistrer'}</button>
         </f.Form>
-      )}
-      {items.length ? (
-        <ul className="space-y-2">
-          {items.map((n: any, i: number) => {
-            const Icon = KIND_ICON[n.kind] || Bell;
-            const inner = (
-              <div className={`card flex gap-3 p-4 ${n.read_at ? '' : 'border-orange/40 bg-orange-50/40'}`}>
-                <span className={`size-10 rounded-xl shrink-0 flex items-center justify-center ${n.read_at ? 'bg-sable text-muted' : 'bg-orange text-white'}`}><Icon className="size-5" /></span>
-                <div className="flex-1"><p className="font-semibold text-sm">{n.title}</p>{n.body && <p className="text-sm text-muted">{n.body}</p>}</div>
-                <span className="text-xs text-muted whitespace-nowrap">{ago(n.created_at)}</span>
-              </div>
-            );
-            return <li key={n.id} {...stagger(i, 40)}>{n.link ? <Link prefetch="intent" to={n.link} className="block lift rounded-2xl">{inner}</Link> : inner}</li>;
-          })}
-        </ul>
-      ) : <Empty title="Aucune Notification" text="Vous serez prévenu ici des messages, commandes et décisions." />}
-    </div>
+      </div>
+    </>
+  );
+}
+
+const CHANNELS: [string, string, any][] = [['app', 'Application', Bell], ['sms', 'SMS', Smartphone], ['whatsapp', 'WhatsApp', MessageCircle]];
+// Interrupteur compact (maquette « Canaux »)
+export function Toggle({ on, onChange, disabled, label }: { on: boolean; onChange?: (v: boolean) => void; disabled?: boolean; label: string }) {
+  return (
+    <button type="button" role="switch" aria-checked={on} aria-label={label} disabled={disabled} onClick={() => onChange?.(!on)}
+      className={`relative inline-flex w-9 h-5 rounded-full transition-colors ${on ? 'bg-turquoise' : 'bg-line'} ${disabled ? 'opacity-60' : ''}`}>
+      <span className={`absolute top-0.5 size-4 rounded-full bg-white shadow transition-transform ${on ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+    </button>
   );
 }

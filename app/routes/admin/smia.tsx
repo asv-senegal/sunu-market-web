@@ -3,9 +3,10 @@ import { Form, useActionData, useLoaderData, useNavigation } from 'react-router'
 import { Coins, Wallet, BarChart3, Sparkles, Power, AlertTriangle } from 'lucide-react';
 import { api, apiOrThrow } from '~/lib/api.server';
 import { fcfa, ago } from '~/lib/format';
-import { Alert, PageTitle } from '~/components/ui';
+import { Alert, Toolbar } from '~/components/ui';
 import { CountUp, stagger } from '~/components/motion';
 
+export const handle = { title: 'SM-IA Et Crédits' };
 export async function loader({ request }: any) {
   const [s, set] = await Promise.all([apiOrThrow(request, '/admin/smia'), api(request, '/admin/settings')]);
   return { ...s, settings: set.ok ? Object.fromEntries(set.data.items.map((x: any) => [x.key, x])) : null };
@@ -41,7 +42,7 @@ export default function AdminSmia() {
   );
   return (
     <>
-      <PageTitle title="SM-IA Et Crédits" sub="Facturation au token : chaque commerçant paie ses crédits ; la modération et le pré-contrôle sont payés par la plateforme." />
+      <Toolbar sub="Facturation au token : chaque commerçant paie ses crédits ; la modération et le pré-contrôle sont payés par la plateforme." />
       {!d.configured && <div className="mb-4"><Alert tone="info">Clé de l’API Anthropic absente : renseignez ANTHROPIC_API_KEY dans la configuration du serveur.</Alert></div>}
       {a?.ok && <div className="mb-4"><Alert tone="success">{a.ok}</Alert></div>}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -56,7 +57,7 @@ export default function AdminSmia() {
       <p className="text-xs text-muted mt-2">Crédits restant dus aux commerçants : {k.credits_outstanding.toLocaleString('fr-FR')}.</p>
       <div className="grid xl:grid-cols-[1.4fr_1fr] gap-6 mt-6">
         <div className="card p-5" data-reveal="">
-          <h2 className="font-display font-semibold text-indigo mb-3">Journal Global Des Actions</h2>
+          <h2 className="font-display font-semibold text-ink mb-3">Journal Global Des Actions</h2>
           <div className="overflow-x-auto"><table className="w-full text-sm">
             <thead className="text-left text-xs text-muted"><tr><th className="py-2">Heure</th><th>Source</th><th>Action</th><th>Résultat</th></tr></thead>
             <tbody className="divide-y divide-sable-dark">
@@ -71,7 +72,7 @@ export default function AdminSmia() {
         <div className="space-y-5">
           {d.settings ? (
             <Form method="post" className="card p-5 space-y-3" data-reveal="right">
-              <h2 className="font-display font-semibold text-indigo">Réglages</h2>
+              <h2 className="font-display font-semibold text-ink">Réglages</h2>
               <div className="divide-y divide-sable-dark">
                 <Toggle name="smia_chatbot_enabled" label="SM-IA Commandes" />
                 <Toggle name="smia_assistant_enabled" label="Assistant SM-IA (propositions)" />

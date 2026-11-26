@@ -1,16 +1,18 @@
 // P31 : annonces signalées, boutiques, catégories, articles interdits
 import { Form, Link, useLoaderData, useSearchParams, useActionData } from 'react-router';
-import { Megaphone, EyeOff, Eye, Plus, Ban } from 'lucide-react';
+import { Megaphone, EyeOff, Eye, Plus, Ban, Trash2, TriangleAlert, Clock } from 'lucide-react';
+import { useState } from 'react';
 import { api, apiOrThrow } from '~/lib/api.server';
-import { fcfa, img, dateFr } from '~/lib/format';
-import { Alert, PageTitle } from '~/components/ui';
+import { img, REPORT_REASON } from '~/lib/format';
+import { Alert, Seg } from '~/components/ui';
 
+export const handle = { title: 'Annonces Et Boutiques' };
 export async function loader({ request }: any) {
   const url = new URL(request.url);
   const vue = url.searchParams.get('vue') || 'signalees';
   const q = url.searchParams.get('q') || '';
   const out: any = { vue, q };
-  if (vue === 'signalees' || vue === 'toutes') out.items = (await apiOrThrow(request, `/admin/listings?${vue === 'signalees' ? 'flagged=1&' : ''}${q ? `q=${encodeURIComponent(q)}` : ''}`)).items;
+  if (vue === 'signalees' || vue === 'toutes') { const r = await apiOrThrow(request, `/admin/listings?${vue === 'signalees' ? 'flagged=1&' : ''}${q ? `q=${encodeURIComponent(q)}` : ''}`); out.items = r.items; out.stats = r.stats; }
   if (vue === 'boutiques') out.shops = (await apiOrThrow(request, '/admin/shops')).items;
   if (vue === 'categories') out.cats = (await apiOrThrow(request, '/admin/categories')).items;
   if (vue === 'interdits') { const s = await api(request, '/admin/settings'); out.prohibited = s.ok ? s.data.items.find((x: any) => x.key === 'prohibited_items')?.value : null; out.canEdit = s.ok; }
@@ -36,34 +38,29 @@ export default function AdminListings() {
   const [sp] = useSearchParams();
   return (
     <>
-      <PageTitle title="Annonces Et Boutiques" sub="Les annonces signalées apparaissent en premier." />
       {a?.error && <div className="mb-4"><Alert>{a.error}</Alert></div>}
-      <div className="flex gap-2 mb-5 overflow-x-auto no-scrollbar">
-        {TABS.map(([k, l]) => <Link prefetch="intent" key={k} to={`?vue=${k}`} className={`chip whitespace-nowrap py-1.5 px-3 ${d.vue === k ? 'bg-indigo text-white' : 'bg-white border border-sable-dark'}`}>{l}</Link>)}
-      </div>
+      <Seg className="mb-4 max-w-full overflow-x-auto no-scrollbar" items={TABS.map(([k, l]) => ({ label: k === 'signalees' && d.items && d.vue === k ? `${l} (${d.items.length})` : l, to: `?vue=${k}`, on: d.vue === k }))} />
       {d.items && (
         <>
           {d.vue === 'toutes' && <Form className="mb-3"><input type="hidden" name="vue" value="toutes" /><input name="q" defaultValue={d.q} placeholder="Rechercher une annonce ou une boutique…" className="input max-w-sm" /></Form>}
-          <div className="space-y-3">
-            {d.items.length === 0 && <p className="card p-6 text-sm text-muted">Aucune annonce à examiner.</p>}
-            {d.items.map((l: any, i: number) => (
-              <div key={l.id} className={`card p-3 flex flex-wrap items-center gap-3 ${l.open_reports ? 'border-orange/40' : ''}`} data-reveal="" style={{ '--d': `${Math.min(i, 8) * 40}ms` } as React.CSSProperties}>
-                <img src={img(l.photo)} alt="" className="size-14 rounded-xl object-cover" loading="lazy" decoding="async" />
-                <div className="flex-1 min-w-[200px]">
-                  <Link prefetch="intent" to={`/a/${l.id}`} className="font-semibold text-sm hover:underline">{l.title}</Link>
-                  <p className="text-xs text-muted">{l.shop_name} · {l.category} › {l.sub} · {dateFr(l.created_at)}</p>
-                  {l.open_reports > 0 && <Link prefetch="intent" to="/admin/signalements" className="chip bg-orange-50 text-orange-dark mt-1">{l.open_reports} signalement(s)</Link>}
-                </div>
-                {l.featured && <span className="chip bg-indigo text-white"><Megaphone className="size-3" />Mis En Avant</span>}
-                <span className="text-sm font-semibold">{fcfa(l.price_fcfa)}</span>
-                <span className="chip bg-sable-dark">{l.status}</span>
-                {l.status !== 'removed' && (
-                  <Form method="post" className="flex gap-1"><input type="hidden" name="intent" value="remove" /><input type="hidden" name="id" value={l.id} />
-                    <input name="reason" required minLength={3} placeholder="Motif" className="input h-8 w-32 text-xs" /><button className="btn-sm btn bg-red-700 text-white">Retirer</button></Form>
-                )}
-              </div>
-            ))}
+          <div className="card overflow-x-auto">
+            <table className="w-full text-[13px] min-w-[900px]">
+              <thead className="bg-sable text-[11.5px] text-muted text-left"><tr><th className="px-4 py-2.5 font-medium">Annonce</th><th className="font-medium">Catégorie</th><th className="font-medium">Motif principal</th><th className="font-medium">Signal.</th><th className="font-medium">État</th><th className="font-medium text-right pr-4">Décision</th></tr></thead>
+              <tbody className="divide-y divide-line">
+                {d.items.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted">Aucune annonce à examiner.</td></tr>}
+                {d.items.map((l: any, i: number) => <Row key={l.id} l={l} i={i} />)}
+              </tbody>
+            </table>
           </div>
+          {d.stats && (
+            <div className="grid sm:grid-cols-3 gap-3 mt-4">
+              {[[Trash2, 'bg-red-50 text-red-700', d.stats.removed_month, 'Annonces retirées ce mois'], [TriangleAlert, 'bg-[#FDF3D7] text-[#8A5A00]', d.stats.warned_month, 'Commerçants avertis ce mois'],
+                [Clock, 'bg-indigo-50 text-indigo', d.stats.avg_hours != null ? `${d.stats.avg_hours} h` : '–', 'Délai moyen de traitement (30 jours)']].map(([I, tone, v, l]: any) => (
+                <div key={l} className="card p-4 flex items-center gap-3" data-reveal=""><span className={`size-11 rounded-xl flex items-center justify-center ${tone}`}><I className="size-5" /></span>
+                  <div><p className="font-display text-xl font-semibold text-ink">{v}</p><p className="text-xs text-muted">{l}</p></div></div>
+              ))}
+            </div>
+          )}
         </>
       )}
       {d.shops && (
@@ -86,7 +83,7 @@ export default function AdminListings() {
         <div className="grid lg:grid-cols-2 gap-4">
           {d.cats.map((c: any, i: number) => (
             <div key={c.id} className="card p-4" data-reveal="" style={{ '--d': `${(i % 4) * 60}ms` } as React.CSSProperties}>
-              <p className="font-display font-semibold text-indigo mb-2">{c.name} <span className="text-xs text-muted font-normal">{c.subs.length} sous-catégories</span></p>
+              <p className="font-display font-semibold text-ink mb-2">{c.name} <span className="text-xs text-muted font-normal">{c.subs.length} sous-catégories</span></p>
               <ul className="divide-y divide-sable-dark text-sm">
                 {c.subs.map((s: any) => (
                   <li key={s.id} className={`py-1.5 flex items-center gap-2 ${s.hidden ? 'opacity-50' : ''}`}>
@@ -107,7 +104,7 @@ export default function AdminListings() {
       {d.vue === 'interdits' && (
         <Form method="post" className="card p-5 max-w-xl space-y-3 animate-fade-up">
           <input type="hidden" name="intent" value="prohibited" />
-          <p className="font-display font-semibold text-indigo flex items-center gap-2"><Ban className="size-4 text-red-700" />Articles Interdits</p>
+          <p className="font-display font-semibold text-ink flex items-center gap-2"><Ban className="size-4 text-red-700" />Articles Interdits</p>
           <p className="text-xs text-muted">Un article par ligne. Cette liste guide la modération humaine et la modération automatique de SM-IA. À faire valider par un juriste.</p>
           <textarea name="items" rows={8} defaultValue={(d.prohibited || []).join('\n')} className="input h-auto py-2" disabled={!d.canEdit} />
           {d.canEdit ? <button className="btn-indigo btn-sm">Enregistrer</button> : <p className="text-xs text-muted">Modification réservée à l’administrateur.</p>}
@@ -115,5 +112,28 @@ export default function AdminListings() {
         </Form>
       )}
     </>
+  );
+}
+
+const STATE: Record<string, [string, string]> = { active: ['En Ligne', 'bg-turquoise-50 text-turquoise'], removed: ['Retirée', 'bg-red-50 text-red-700'], paused: ['En Pause', 'bg-sable-2 text-ink-2'], sold: ['Vendue', 'bg-indigo-50 text-indigo'], draft: ['Brouillon', 'bg-sable-2 text-ink-2'] };
+function Row({ l, i }: { l: any; i: number }) {
+  const [remove, setRemove] = useState(false);
+  const st = l.open_reports && l.status === 'active' ? ['À Examiner', 'bg-[#FDF3D7] text-[#8A5A00]'] : STATE[l.status] || [l.status, 'bg-sable-2'];
+  return (
+    <tr className="hover:bg-sable/40" data-reveal="" style={{ '--d': `${Math.min(i, 8) * 30}ms` } as React.CSSProperties}>
+      <td className="px-4 py-3"><div className="flex items-center gap-3"><img src={img(l.photo)} alt="" className="size-10 rounded-lg object-cover bg-sable-2" loading="lazy" decoding="async" />
+        <div className="min-w-0"><Link prefetch="intent" to={`/a/${l.id}`} className="font-semibold hover:underline line-clamp-1">{l.title}</Link><p className="text-[11.5px] text-muted flex items-center gap-1">{l.shop_name}{l.featured && <Megaphone className="size-3 text-indigo" aria-label="Mis en avant" />}</p></div></div></td>
+      <td className="text-muted">{l.category} / {l.sub}</td>
+      <td>{l.top_reason ? REPORT_REASON[l.top_reason] || l.top_reason : <span className="text-muted">–</span>}</td>
+      <td className="font-semibold">{l.open_reports || 0}</td>
+      <td><span className={`chip ${st[1]}`}>{st[0]}</span></td>
+      <td className="pr-4"><div className="flex justify-end gap-1.5">
+        {l.status !== 'removed' && (remove ? (
+          <Form method="post" className="flex gap-1"><input type="hidden" name="intent" value="remove" /><input type="hidden" name="id" value={l.id} />
+            <input name="reason" required minLength={3} autoFocus placeholder="Motif du retrait" className="input h-8 w-36 text-xs" /><button className="btn-sm btn bg-red-700 text-white">Confirmer</button></Form>
+        ) : <button onClick={() => setRemove(true)} className="btn-sm btn border border-red-200 bg-white text-red-700 hover:bg-red-50">Retirer</button>)}
+        {l.report_id && !remove && <Link prefetch="intent" to={`/admin/signalements/${l.report_id}`} className="btn-ghost btn-sm">Classer</Link>}
+      </div></td>
+    </tr>
   );
 }

@@ -1,7 +1,8 @@
 // Fil SM-Chat : messages, commandes liées, rafraîchissement automatique
-import { Link, useFetcher, useLoaderData, useRevalidator, data } from 'react-router';
+import { Link, useFetcher, useLoaderData, useLocation, useRevalidator, data } from 'react-router';
 import { useEffect, useRef } from 'react';
-import { ArrowLeft, Send, ShoppingBag, Info, Sparkles, ImagePlus } from 'lucide-react';
+import { ArrowLeft, Send, ShoppingBag, Info, Sparkles, ImagePlus, BadgeCheck } from 'lucide-react';
+import { initials } from './messages';
 import { api, apiOrThrow, formError, idemOf, newIdem } from '~/lib/api.server';
 import { fcfa, img, timeFr, dateFr, ORDER_STATUS, PAY } from '~/lib/format';
 
@@ -35,17 +36,19 @@ export default function Thread() {
   useEffect(() => { end.current?.scrollIntoView({ block: 'end' }); }, [messages.length]);
   useEffect(() => { if (fetcher.state === 'idle' && (fetcher.data as any)?.ok) form.current?.reset(); }, [fetcher.state, fetcher.data]);
 
+  const base = useLocation().pathname.startsWith('/ma-boutique') ? '/ma-boutique/sm-chat' : '/messages';
+  const name = c.iAmSeller ? c.buyer_name : c.shop_name;
   let lastDay = '';
   return (
     <>
-      <header className="flex items-center gap-3 p-3 border-b border-sable-dark">
-        <Link prefetch="intent" to="/messages" className="md:hidden p-1" aria-label="Retour"><ArrowLeft className="size-5" /></Link>
-        <img src={img(c.photo)} alt="" className="size-10 rounded-lg object-cover" loading="lazy" decoding="async" />
+      <header className="flex items-center gap-3 px-4 py-3 border-b border-line">
+        <Link prefetch="intent" to={base} className="md:hidden p-1" aria-label="Retour"><ArrowLeft className="size-5" /></Link>
+        <span className="size-10 rounded-full bg-indigo text-white text-sm font-semibold flex items-center justify-center shrink-0">{initials(name)}</span>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-sm truncate flex items-center gap-2">{c.iAmSeller ? c.buyer_name : c.shop_name}
-            {c.smiaActive && <span className="chip bg-turquoise-50 text-turquoise text-[10px]"><Sparkles className="size-3" />SM-IA Actif</span>}</p>
+          <p className="font-semibold text-sm truncate flex items-center gap-1.5">{name}{!c.iAmSeller && <BadgeCheck className="size-3.5 text-turquoise" />}</p>
           <Link prefetch="intent" to={`/a/${c.listing_id}`} className="text-xs text-muted truncate block hover:underline">{c.title} · {fcfa(c.price_fcfa)}</Link>
         </div>
+        {c.smiaActive && <span className="chip bg-turquoise-50 text-turquoise text-[11px] py-1"><Sparkles className="size-3" />SM-IA Actif</span>}
         {c.iAmSeller ? <Link prefetch="intent" to="/ma-boutique/commandes" className="btn-ghost btn-sm">Commandes</Link> : <Link prefetch="intent" to="/commandes" className="btn-ghost btn-sm">Mes Achats</Link>}
       </header>
       {orders.length > 0 && (

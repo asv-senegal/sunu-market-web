@@ -2,9 +2,10 @@
 import { Form, Link, useActionData, useLoaderData, useSearchParams } from 'react-router';
 import { Plus, Check } from 'lucide-react';
 import { api, apiOrThrow } from '~/lib/api.server';
-import { Alert, PageTitle } from '~/components/ui';
+import { Alert, Toolbar } from '~/components/ui';
 import { Select } from '~/components/Select';
 
+export const handle = { title: 'Paramètres Et Rôles' };
 export async function loader({ request }: any) {
   const [team, s] = await Promise.all([apiOrThrow(request, '/admin/team'), apiOrThrow(request, '/admin/settings')]);
   return { ...team, settings: Object.fromEntries(s.items.map((x: any) => [x.key, x])) };
@@ -42,7 +43,7 @@ export default function Settings() {
   const perms = d.permissions || {};
   return (
     <>
-      <PageTitle title="Paramètres Et Rôles" />
+      <Toolbar />
       <div className="flex gap-2 mb-5">{TABS.map(([k, l]) => <Link prefetch="intent" key={k} to={`?vue=${k}`} className={`chip py-1.5 px-3 ${tab === k ? 'bg-indigo text-white' : 'bg-white border border-sable-dark'}`}>{l}</Link>)}</div>
       {a?.ok && <div className="mb-4"><Alert tone="success">{a.ok}</Alert></div>}
       {a?.error && <div className="mb-4"><Alert>{a.error}</Alert></div>}
@@ -62,7 +63,7 @@ export default function Settings() {
             <div className="p-3 border-t border-sable-dark"><button className="btn-indigo btn-sm">Enregistrer Les Droits</button></div>
           </Form>
           <div className="card p-5">
-            <h2 className="font-display font-semibold text-indigo mb-3">Équipe</h2>
+            <h2 className="font-display font-semibold text-ink mb-3">Équipe</h2>
             <ul className="divide-y divide-sable-dark text-sm mb-4">{d.members.map((m: any) => <li key={m.id} className="py-2 flex justify-between"><span>{m.first_name} {m.last_name} <span className="text-xs text-muted">{m.phone}</span></span><span className="chip bg-indigo-50 text-indigo">{ROLES.find(([r]) => r === m.role)?.[1]}</span></li>)}</ul>
             <Form method="post" className="flex flex-wrap gap-2"><input type="hidden" name="intent" value="member" />
               <input name="phone" required placeholder="Numéro d’un compte vérifié" className="input h-9 max-w-xs" />

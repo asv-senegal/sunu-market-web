@@ -1,13 +1,14 @@
 // Poser une annonce : catégorie à trois niveaux, photos, prix, remise et paiements acceptés
 import { Form, useActionData, useNavigation, useRouteLoaderData, redirect, useLoaderData, Link, useFetcher } from 'react-router';
 import { useState, useRef, useEffect } from 'react';
-import { ImagePlus, X, Sparkles } from 'lucide-react';
+import { ImagePlus, X, Sparkles, Camera, Wifi } from 'lucide-react';
 import { api, formError, idemOf, newIdem } from '~/lib/api.server';
 import { CONDITION, PAY, DELIVERY } from '~/lib/format';
 import { Alert, Field, PageTitle } from '~/components/ui';
 import type { Cat } from '~/components/Shell';
 import { Select } from '~/components/Select';
 
+export const handle = { title: 'Poser Une Annonce' };
 export const meta = () => [{ title: 'Poser Une Annonce | Sunu-Market' }];
 export async function loader({ request }: any) {
   const r = await api(request, '/me/shop');
@@ -56,20 +57,23 @@ export default function NewListing() {
 
   return (
     <>
-      <PageTitle title="Poser Une Annonce" sub="Des photos nettes et un prix clair font vendre plus vite." />
-      <Form ref={formRef} method="post" encType="multipart/form-data" className="card p-6 space-y-5 max-w-3xl animate-fade-up">
+      <Form ref={formRef} method="post" encType="multipart/form-data" className="grid lg:grid-cols-[300px_1fr] gap-5 items-start animate-fade-up">
         <input type="hidden" name="idem" value={idem} />
-        {a?.error && <Alert>{a.error}</Alert>}
-        <div>
-          <span className="label">Photos (1 à 6)</span>
-          <label className="flex items-center gap-3 rounded-2xl border-2 border-dashed border-sable-dark bg-sable p-4 cursor-pointer hover:border-turquoise">
-            <ImagePlus className="size-8 text-indigo" />
-            <span className="text-sm"><span className="font-semibold text-indigo block">Ajouter Des Photos</span><span className="text-xs text-muted">JPEG, PNG ou WebP, 5 Mo maximum chacune.</span></span>
-            <input type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple required className="sr-only"
-              onChange={(ev) => setPreviews(Array.from(ev.target.files || []).slice(0, 6).map((f) => URL.createObjectURL(f)))} />
-          </label>
-          {previews.length > 0 && <div className="flex gap-2 mt-2">{previews.map((p) => <img key={p} src={p} alt="" className="size-16 rounded-lg object-cover" loading="lazy" decoding="async" />)}</div>}
+        <div className="card p-5 space-y-3 lg:sticky lg:top-24">
+          <div><h2 className="font-display font-semibold text-ink">Photos</h2><p className="text-xs text-muted">La première photo sert de couverture (1 à 6).</p></div>
+          <div className="grid grid-cols-3 gap-2">
+            {previews.map((p, i) => <img key={p} src={p} alt={`Photo ${i + 1}`} className={`aspect-square w-full rounded-xl object-cover ${i === 0 ? 'ring-2 ring-orange ring-offset-1' : ''}`} loading="lazy" decoding="async" />)}
+            <label className="aspect-square rounded-xl border-2 border-dashed border-line flex flex-col items-center justify-center gap-1 text-muted cursor-pointer hover:border-turquoise hover:text-turquoise transition-colors">
+              <Camera className="size-5" /><span className="text-[11px]">Ajouter</span>
+              <input type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple required className="sr-only"
+                onChange={(ev) => setPreviews(Array.from(ev.target.files || []).slice(0, 6).map((f) => URL.createObjectURL(f)))} />
+            </label>
+          </div>
+          <p className="text-[11.5px] text-muted">JPEG, PNG ou WebP, 5 Mo maximum chacune.</p>
+          <p className="rounded-xl bg-turquoise-50 text-turquoise text-xs p-3 flex gap-2"><Wifi className="size-4 shrink-0" />Photos compressées automatiquement pour économiser vos données.</p>
         </div>
+        <div className="card p-5 md:p-6 space-y-5">
+        {a?.error && <Alert>{a.error}</Alert>}
         <Field label="Titre" name="title" required minLength={5} maxLength={90} placeholder="Ex. Boubou en bazin brodé, taille M" error={e.title} />
         <div className="grid sm:grid-cols-2 gap-3">
           <Field label="Catégorie">
@@ -98,6 +102,7 @@ export default function NewListing() {
           <button className="btn-primary press" disabled={busy}>{busy ? 'Publication…' : 'Publier L’Annonce'}</button>
           <button name="draft" value="1" className="btn-ghost press" disabled={busy}>Enregistrer En Brouillon</button>
         </div>
+        </div>
       </Form>
     </>
   );
@@ -109,8 +114,8 @@ function Checks({ label, name, opts, def, error }: any) {
       <legend className="label">{label}</legend>
       <div className="flex flex-wrap gap-2">
         {Object.entries(opts).map(([k, v]: any) => (
-          <label key={k} className="chip border border-sable-dark bg-white py-2 px-3 cursor-pointer has-[:checked]:border-turquoise has-[:checked]:bg-turquoise-50">
-            <input type="checkbox" name={name} value={k} defaultChecked={def.includes(k)} className="accent-turquoise" />{v}
+          <label key={k} className="flex items-center gap-2 text-[13.5px] text-ink-2 cursor-pointer pr-3">
+            <input type="checkbox" name={name} value={k} defaultChecked={def.includes(k)} className="size-4 accent-indigo rounded" />{v}
           </label>
         ))}
       </div>

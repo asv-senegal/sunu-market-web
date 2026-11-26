@@ -3,7 +3,7 @@ import { API_URL } from '~/lib/env.server';
 import { getToken } from '~/lib/session.server';
 const MAP: Record<string, string> = {
   'commandes.csv': '/me/shop/orders.csv', 'journal-sm-ia.csv': '/me/smia/journal.csv',
-  'revenus.csv': '/admin/revenue.csv', 'audit.csv': '/admin/audit.csv',
+  'revenus.csv': '/admin/revenue.csv', 'audit.csv': '/admin/audit.csv', 'rapport.csv': '/admin/report.csv',
 };
 export async function loader({ request, params }: any) {
   const path = MAP[params.name];

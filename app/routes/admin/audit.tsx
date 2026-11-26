@@ -3,8 +3,9 @@ import { useLoaderData, Form, useActionData } from 'react-router';
 import { Lock, Download, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { apiOrThrow } from '~/lib/api.server';
 import { dateFr, timeFr } from '~/lib/format';
-import { PageTitle, Alert } from '~/components/ui';
+import { Toolbar, Alert } from '~/components/ui';
 
+export const handle = { title: 'Journal D’Audit' };
 export const loader = ({ request }: any) => apiOrThrow(request, '/admin/audit');
 export const action = ({ request }: any) => apiOrThrow(request, '/admin/audit/verify');
 const ROLE: Record<string, string> = { admin: 'Administrateur', moderator: 'Modérateur', finance: 'Finance', support: 'Support', member: 'Membre' };
@@ -15,12 +16,12 @@ export default function Audit() {
   const v = useActionData<typeof action>() as any;
   return (
     <>
-      <PageTitle title="Journal D’Audit">
+      <Toolbar>
         <div className="flex gap-2">
           <Form method="post"><button className="btn-ghost btn-sm"><ShieldCheck className="size-3.5" />Vérifier L’Intégrité</button></Form>
           <a href="/exports/audit.csv" className="btn-indigo btn-sm"><Download className="size-3.5" />Exporter Pour Contrôle</a>
         </div>
-      </PageTitle>
+      </Toolbar>
       <div className="card p-4 mb-4 flex gap-3 items-center bg-indigo-50 border-indigo-100 text-sm text-indigo animate-fade-up"><Lock className="size-5 shrink-0" />Journal en ajout seul. Aucune ligne ne peut être modifiée ni supprimée, y compris par un administrateur. Chaque ligne porte une empreinte chaînée à la précédente.</div>
       {v && (v.broken === 0 ? <div className="mb-4"><Alert tone="success"><span className="inline-flex items-center gap-1"><ShieldCheck className="size-4" />Chaîne intacte : {v.total} lignes vérifiées.</span></Alert></div>
         : <div className="mb-4"><Alert><span className="inline-flex items-center gap-1"><ShieldAlert className="size-4" />{v.broken} ligne(s) incohérente(s), à partir de la n° {v.first_broken}.</span></Alert></div>)}

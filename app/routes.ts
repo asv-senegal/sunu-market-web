@@ -16,16 +16,25 @@ export default [
   route('verification', 'routes/verification.tsx'),
   route('deconnexion', 'routes/logout.tsx'),
 
+  route('mot-de-passe-oublie', 'routes/forgot.tsx'),
+
   route('messages', 'routes/messages.tsx', [route(':id', 'routes/messages.thread.tsx')]),
-  route('commandes', 'routes/orders.tsx'),
-  route('commandes/:id', 'routes/order.tsx'),
-  route('commandes/:id/avis', 'routes/order-review.tsx'),
-  route('signalements', 'routes/my-reports.tsx'),
-  route('signalements/:id', 'routes/my-report.tsx'),
   route('paiement/:ref', 'routes/payment.tsx'),
-  route('notifications', 'routes/notifications.tsx'),
-  route('profil', 'routes/profile.tsx'),
-  route('signaler', 'routes/report.tsx'),
+  route('profil', 'routes/account/profil-redirect.tsx'),
+
+  // Espace membre (P13 à P19) : barre latérale du compte
+  layout('routes/account/layout.tsx', [
+    route('compte', 'routes/profile.tsx'),
+    route('compte/favoris', 'routes/account/favorites.tsx'),
+    route('compte/securite', 'routes/account/security.tsx'),
+    route('commandes', 'routes/orders.tsx'),
+    route('commandes/:id', 'routes/order.tsx'),
+    route('commandes/:id/avis', 'routes/order-review.tsx'),
+    route('signalements', 'routes/my-reports.tsx'),
+    route('signalements/:id', 'routes/my-report.tsx'),
+    route('signaler', 'routes/report.tsx'),
+    route('notifications', 'routes/notifications.tsx'),
+  ]),
 
   route('ma-boutique', 'routes/seller/layout.tsx', [
     index('routes/seller/dashboard.tsx'),
@@ -37,6 +46,9 @@ export default [
     route('sm-ia', 'routes/seller/smia.tsx'),
     route('sm-ia/commandes', 'routes/seller/smia-orders.tsx'),
     route('sm-ia/recharger', 'routes/seller/recharge.tsx'),
+    route('avis', 'routes/seller/reviews.tsx'),
+    route('parametres', 'routes/seller/settings.tsx'),
+    route('sm-chat', 'routes/messages.tsx', { id: 'seller-chat' }, [route(':id', 'routes/messages.thread.tsx', { id: 'seller-chat-thread' })]),
   ]),
 
   route('admin', 'routes/admin/layout.tsx', [
@@ -49,6 +61,7 @@ export default [
     route('sm-ia', 'routes/admin/smia.tsx'),
     route('journal', 'routes/admin/audit.tsx'),
     route('parametres', 'routes/admin/settings.tsx'),
+    route('recherche', 'routes/admin/search.tsx'),
   ]),
 
   // Ressources : images de l'API et fichiers privés de vérification (administration seulement)

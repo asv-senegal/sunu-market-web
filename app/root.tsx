@@ -1,4 +1,4 @@
-import { Links, Meta, Outlet, Scripts, ScrollRestoration, isRouteErrorResponse, useLoaderData, useRouteError, Link, useNavigation } from 'react-router';
+import { Links, Meta, Outlet, Scripts, ScrollRestoration, isRouteErrorResponse, useLoaderData, useRouteError, Link, useNavigation, useLocation } from 'react-router';
 import type { ShouldRevalidateFunctionArgs } from 'react-router';
 import type { LinksFunction } from 'react-router';
 import './app.css';
@@ -52,8 +52,10 @@ export async function loader({ request }: { request: Request }) {
 // SM-Chat et les notifications : une requête de moins à chaque changement de page.
 export function shouldRevalidate({ formMethod, nextUrl, defaultShouldRevalidate }: ShouldRevalidateFunctionArgs) {
   if (formMethod && formMethod !== 'GET') return defaultShouldRevalidate;
-  return /^\/(messages|notifications|connexion|deconnexion|verification)/.test(nextUrl.pathname);
+  return /^\/(messages|notifications|connexion|deconnexion|verification|compte|ma-boutique\/sm-chat)/.test(nextUrl.pathname);
 }
+
+const BARE = /^\/(ma-boutique|admin|connexion|inscription|verification|mot-de-passe-oublie)(\/|$)/;
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -95,6 +97,9 @@ export default function App() {
   useServiceWorker();
   const nav = useNavigation();
   const loading = nav.state === 'loading' && !nav.formMethod;
+  const path = useLocation().pathname;
+  // Espaces « application » (commerçant, administration) et écrans d'inscription : pleine page, sans en-tête ni pied du site
+  if (BARE.test(path)) return (<><NavProgress /><Outlet /></>);
   return (
     <>
       <NavProgress />

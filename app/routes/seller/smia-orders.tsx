@@ -3,10 +3,11 @@ import { Form, Link, useActionData, useLoaderData, useNavigation } from 'react-r
 import { Bot, Lock, Power, Download, MessageCircle } from 'lucide-react';
 import { api, apiOrThrow, formError } from '~/lib/api.server';
 import { ago } from '~/lib/format';
-import { Alert, PageTitle } from '~/components/ui';
+import { Alert } from '~/components/ui';
 import { CountUp, stagger } from '~/components/motion';
 import { Select } from '~/components/Select';
 
+export const handle = { title: 'SM-IA Commandes' };
 export const meta = () => [{ title: 'SM-IA Commandes | Sunu-Market' }];
 export const loader = ({ request }: any) => apiOrThrow(request, '/me/smia');
 export async function action({ request }: any) {
@@ -39,7 +40,6 @@ export default function SmiaOrders() {
   const log = d.journal.filter((j: any) => j.source === 'chatbot');
   return (
     <>
-      <PageTitle title="SM-IA Commandes" sub="SM-IA répond à vos clients dans SM-Chat quand vous êtes hors ligne ou en remise." />
       {a?.ok && <div className="mb-4"><Alert tone="success">{a.ok}</Alert></div>}
       {a?.error && <div className="mb-4"><Alert>{a.error}</Alert></div>}
       <div className="grid xl:grid-cols-[1fr_1.1fr] gap-6">
@@ -61,7 +61,7 @@ export default function SmiaOrders() {
               <Select name="chatbot_mode" size="sm" className="w-56" defaultValue={st.chatbot_mode} aria-label="Quand répondre" options={[{ value: 'offline', label: 'Quand je suis hors ligne' }, { value: 'always', label: 'Toujours' }]} /></label>
           </div>
           <div className="card px-5 divide-y divide-sable-dark" data-reveal="">
-            <p className="font-display font-semibold text-indigo py-3">Ce Que SM-IA Peut Faire Seul</p>
+            <p className="font-display font-semibold text-ink py-3">Ce Que SM-IA Peut Faire Seul</p>
             <Toggle name="perm_answer" defaultChecked={st.perm_answer} label="Répondre sur la disponibilité et le prix affiché" sub="Uniquement avec les informations de vos annonces" />
             <Toggle name="perm_accept" defaultChecked={st.perm_accept} label="Accepter une commande au prix affiché" sub="Si le stock est suffisant et sous votre plafond" />
             <Toggle name="perm_meeting" defaultChecked={st.perm_meeting} label="Proposer un rendez-vous de remise" sub="Dans vos créneaux et quartiers" />
@@ -70,7 +70,7 @@ export default function SmiaOrders() {
             ))}
           </div>
           <div className="card p-5 space-y-3" data-reveal="">
-            <p className="font-display font-semibold text-indigo">Limites</p>
+            <p className="font-display font-semibold text-ink">Limites</p>
             <label className="block"><span className="label">Montant Maximal D’Une Commande Acceptée Seule (FCFA)</span><input name="max_order_fcfa" type="number" min={0} defaultValue={st.max_order_fcfa} className="input" /></label>
             <label className="block"><span className="label">Arrêter SM-IA Si Le Solde Descend Sous (Crédits)</span><input name="min_balance_stop" type="number" min={0} defaultValue={st.min_balance_stop} className="input" /></label>
             <label className="block"><span className="label">Vos Créneaux Et Lieux De Remise</span><textarea name="meeting_info" rows={2} maxLength={400} defaultValue={st.meeting_info || ''} className="input h-auto py-2" placeholder="Ex. du lundi au samedi, 10 h – 18 h, marché de Colobane ou Parcelles U15" /></label>
@@ -79,7 +79,7 @@ export default function SmiaOrders() {
         </Form>
         <div className="space-y-5">
           <div className="card p-5" data-reveal="right">
-            <div className="flex items-center justify-between mb-3"><h2 className="font-display font-semibold text-indigo">Journal Des Actions</h2><a href="/exports/journal-sm-ia.csv" className="btn-ghost btn-sm"><Download className="size-3.5" />Exporter</a></div>
+            <div className="flex items-center justify-between mb-3"><h2 className="font-display font-semibold text-ink">Journal Des Actions</h2><a href="/exports/journal-sm-ia.csv" className="btn-ghost btn-sm"><Download className="size-3.5" />Exporter</a></div>
             {log.length ? (
               <ul className="space-y-2">
                 {log.slice(0, 15).map((j: any, i: number) => (

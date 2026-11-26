@@ -9,7 +9,7 @@ export async function loader({ request }: any) { await requireMe(request); retur
 export default function MyReports() {
   const { items } = useLoaderData<typeof loader>();
   return (
-    <div className="container-x py-6 max-w-2xl">
+    <div className="max-w-3xl w-full">
       <PageTitle title="Mes Signalements" sub="Ceux que vous avez faits et ceux qui vous concernent." />
       {items.length ? (
         <div className="card divide-y divide-sable-dark">
