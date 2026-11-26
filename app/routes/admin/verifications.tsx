@@ -1,10 +1,10 @@
 // File de vérification : décision humaine, images supprimées après décision
-import { Form, useLoaderData, useNavigation, useSearchParams, Link } from 'react-router';
+import { Form, useActionData, useLoaderData, useNavigation, useSearchParams, Link } from 'react-router';
 import { useState } from 'react';
 import { Sparkles, Lock, Check, X, RefreshCw, TriangleAlert, IdCard, ScanFace } from 'lucide-react';
 import { api, apiOrThrow } from '~/lib/api.server';
 import { dateFr, timeFr } from '~/lib/format';
-import { Empty, Seg } from '~/components/ui';
+import { Alert, Empty, Seg } from '~/components/ui';
 
 export const handle = { title: 'Vérifications D’Identité' };
 export async function loader({ request }: any) {
@@ -50,6 +50,7 @@ export default function Verifications() {
 function Dossier({ v }: { v: any }) {
   const [mode, setMode] = useState<null | 'reject' | 'resubmit'>(null);
   const busy = useNavigation().state === 'submitting';
+  const a = useActionData<typeof action>() as { error?: string } | null; // refus de l'API (ex. motif manquant)
   const p = v.ai_precheck || {};
   const checks: [string, any, boolean | null][] = [
     ['Pièce lisible et exploitable', p.document_lisible == null ? 'Non évalué' : p.document_lisible ? 'Oui' : 'À revoir', p.document_lisible ?? null],
@@ -90,6 +91,7 @@ function Dossier({ v }: { v: any }) {
         {v.status === 'pending' && (
           <Form method="post" className="card p-5 space-y-2.5" data-reveal="">
             <h3 className="font-display font-semibold text-ink mb-1">Décision</h3>
+            {a?.error && <Alert>{a.error}</Alert>}
             <input type="hidden" name="id" value={v.id} />
             <button name="decision" value="approved" className="btn w-full bg-turquoise text-white hover:bg-turquoise/90 press" disabled={busy}><Check className="size-4" />Valider Le Compte</button>
             {mode ? (

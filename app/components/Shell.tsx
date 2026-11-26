@@ -42,21 +42,22 @@ export function Header({ me, cats }: { me: any; cats: Cat[] }) {
   useEffect(() => { const f = () => setScrolled(window.scrollY > 12); f(); window.addEventListener('scroll', f, { passive: true }); return () => window.removeEventListener('scroll', f); }, []);
   return (
     <header className={`sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-line transition-shadow duration-300 ${scrolled ? 'shadow-[0_8px_24px_-14px_rgb(27_42_107/0.35)]' : ''}`}>
-      <div className={`container-x flex items-center gap-3 md:gap-7 transition-[height] duration-300 ${scrolled ? 'h-14 md:h-16' : 'h-16 md:h-[72px]'}`}>
+      {/* Tablette (768 à 1023 px) : rangée resserrée pour que compte et « Poser une annonce » restent visibles */}
+      <div className={`container-x flex items-center gap-3 md:gap-4 lg:gap-7 transition-[height] duration-300 ${scrolled ? 'h-14 md:h-16' : 'h-16 md:h-[72px]'}`}>
         <Link prefetch="intent" to="/categories" className="md:hidden -ml-1 p-2 text-indigo" aria-label="Catégories"><Menu className="size-6" /></Link>
         <Logo />
-        <Form action="/recherche" className="hidden md:flex flex-1 max-w-[620px] h-[46px] items-center rounded-full border-[1.5px] border-line bg-white pl-4 pr-1.5 focus-within:border-turquoise transition-colors" role="search">
+        <Form action="/recherche" className="hidden md:flex flex-1 min-w-0 max-w-[620px] h-[46px] items-center rounded-full border-[1.5px] border-line bg-white pl-4 pr-1.5 focus-within:border-turquoise transition-colors" role="search">
           <Search className="size-[19px] text-muted shrink-0" />
           <input name="q" defaultValue={q} placeholder="Rechercher un article, une boutique…" className="flex-1 min-w-0 bg-transparent px-3 text-sm outline-none placeholder:text-muted" aria-label="Rechercher" />
-          <span className="flex items-center gap-1.5 px-3.5 border-l border-line text-[13.5px] font-medium text-ink whitespace-nowrap" title="Ville : Dakar (d’autres villes suivront)">
+          <span className="hidden lg:flex items-center gap-1.5 px-3.5 border-l border-line text-[13.5px] font-medium text-ink whitespace-nowrap" title="Ville : Dakar (d’autres villes suivront)">
             <MapPin className="size-4" />Dakar
           </span>
           <button className="size-9 rounded-full bg-orange text-white flex items-center justify-center hover:bg-orange-dark transition-colors shrink-0" aria-label="Lancer la recherche"><Search className="size-[17px]" strokeWidth={2.2} /></button>
         </Form>
-        <div className="ml-auto flex items-center gap-1 md:gap-4 text-ink-2">
+        <div className="ml-auto flex items-center gap-1 md:gap-2 lg:gap-4 text-ink-2 shrink-0">
           {me ? (
             <>
-              <NavIcon to="/compte/favoris" label="Favoris" className="hidden md:inline-flex"><Heart className="size-[21px]" /></NavIcon>
+              <NavIcon to="/compte/favoris" label="Favoris" className="hidden lg:inline-flex"><Heart className="size-[21px]" /></NavIcon>
               <NavIcon to="/messages" label="SM-Chat" count={me.unread?.messages}><MessageCircle className="size-[21px]" /></NavIcon>
               <NavIcon to="/notifications" label="Notifications" count={me.unread?.notifications}><Bell className="size-[21px]" /></NavIcon>
               <UserMenu me={me} />
@@ -71,7 +72,9 @@ export function Header({ me, cats }: { me: any; cats: Cat[] }) {
               <Link prefetch="intent" to="/connexion" className="md:hidden btn-ghost btn-sm">Se Connecter</Link>
             </>
           )}
-          <Link prefetch="intent" to="/ma-boutique/annonces/nouvelle" className="hidden md:inline-flex btn-primary h-10 shadow-[0_6px_16px_-8px_rgb(201_67_16/.7)]"><Plus className="size-4" strokeWidth={2.4} />Poser Une Annonce</Link>
+          {/* Bouton complet à partir de 1024 px ; sur tablette, l'icône « + » seule */}
+          <Link prefetch="intent" to="/ma-boutique/annonces/nouvelle" aria-label="Poser Une Annonce" title="Poser Une Annonce"
+            className="hidden md:inline-flex btn-primary h-10 px-3 lg:px-4 shadow-[0_6px_16px_-8px_rgb(201_67_16/.7)]"><Plus className="size-4" strokeWidth={2.4} /><span className="hidden lg:inline">Poser Une Annonce</span></Link>
         </div>
       </div>
       {!account && <CategoryBar cats={cats} />}

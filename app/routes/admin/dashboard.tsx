@@ -11,7 +11,13 @@ export const loader = ({ request }: any) => apiOrThrow(request, '/admin/stats');
 const SRC: Record<string, [string, string]> = { subscription: ['Abonnements', '#1B2A6B'], featured: ['Mise En Avant', '#C94310'], campaign: ['Campagnes', '#0B7F7C'], ad: ['Publicité', '#E8A317'], credits: ['Commissions SM-IA', '#8A90A8'] };
 const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 
-const fmtM = (v: number) => (v / 1e6).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// Montant lisible : en millions à partir de 1 M FCFA, sinon le montant exact (2 500 FCFA, et non « 0,00 M »)
+const money = (v: number) => {
+  const n = Number(v || 0);
+  return n >= 1e6
+    ? { value: (n / 1e6).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), unit: 'M FCFA' }
+    : { value: Math.round(n).toLocaleString('fr-FR').replace(/\s/g, ' '), unit: 'FCFA' };
+};
 
 export default function AdminDashboard() {
   const { kpi: k, urgent, byCategory, signups, revenue } = useLoaderData<typeof loader>();
@@ -35,7 +41,7 @@ export default function AdminDashboard() {
         <a href="/exports/rapport.csv" className="btn-indigo h-10"><Download className="size-4" />Exporter Le Rapport</a>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-        <Kpi i={0} to="/admin/revenus" icon={Wallet} tone="bg-orange-50 text-orange" label="Revenus du mois" value={<>{fmtM(k.revenue_month)}<span className="text-[13px] font-medium text-muted ml-1">M FCFA</span></>} foot={<Delta now={k.revenue_month} before={k.revenue_prev} />} spark={revenue.months.map((m: any) => m.total)} />
+        <Kpi i={0} to="/admin/revenus" icon={Wallet} tone="bg-orange-50 text-orange" label="Revenus du mois" value={<>{money(k.revenue_month).value}<span className="text-[13px] font-medium text-muted ml-1">{money(k.revenue_month).unit}</span></>} foot={<Delta now={k.revenue_month} before={k.revenue_prev} />} spark={revenue.months.map((m: any) => m.total)} />
         <Kpi i={1} icon={BadgeCheck} tone="bg-turquoise-50 text-turquoise" label="Comptes vérifiés" value={<CountUp value={k.verified_users} />} foot={<span className="chip bg-turquoise-50 text-turquoise">↑ +{k.verified_30d}</span>} spark={signups.map((x: any) => x.n)} />
         <Kpi i={2} icon={CreditCard} tone="bg-indigo-50 text-indigo" label="Abonnés actifs" value={<CountUp value={k.paying_shops} />} foot={<span className="text-[11.5px] text-muted">{k.trial_shops} en essai de 14 jours</span>} />
         <Kpi i={3} to="/admin/verifications" icon={ScanFace} tone="bg-[#FDF3D7] text-[#8A5A00]" label="Vérifications en attente" value={<CountUp value={k.pending_verifications} />} foot={<span className="text-[11.5px] text-muted">{k.pending_verifications ? `plus ancienne : ${pendingH} h` : 'File vide'}</span>} />

@@ -53,7 +53,8 @@ export function Spark({ values, color = '#0B7F7C', w = 90, h = 28 }: { values: n
   if (!values.length) return null;
   const max = Math.max(1, ...values), min = Math.min(...values);
   const pts = values.map((v, i) => `${((i * w) / Math.max(1, values.length - 1)).toFixed(1)},${(h - 3 - ((v - min) / Math.max(1, max - min)) * (h - 6)).toFixed(1)}`).join(' ');
-  return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden className="shrink-0"><polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" pathLength={1} className="chart-draw" /></svg>;
+  // Se réduit si la carte est étroite (téléphone : 2 cartes par ligne), au lieu de déborder de la carte
+  return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden className="min-w-0 shrink"><polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" pathLength={1} className="chart-draw" /></svg>;
 }
 
 // Barres verticales ; la dernière (mois en cours) en orange
